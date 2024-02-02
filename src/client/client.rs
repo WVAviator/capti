@@ -15,6 +15,10 @@ lazy_static! {
     };
 }
 
+pub fn get_client() -> &'static reqwest::Client {
+    &CLIENT
+}
+
 pub struct ResponseOutput {
     pub http_status: u16,
     pub response_body: serde_json::Value,
