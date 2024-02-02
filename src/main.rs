@@ -13,9 +13,11 @@ async fn main() {
 
     let response = client.get(&args.url).send().await.unwrap();
 
-    println!("Status: {}", response.status().as_u16());
+    if args.status {
+        println!("Status: {}", response.status().as_u16());
+    }
 
     let json = response.json::<serde_json::Value>().await.unwrap();
 
-    println!("{}", json);
+    println!("{}", serde_json::to_string_pretty(&json).unwrap());
 }

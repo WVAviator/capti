@@ -6,6 +6,7 @@ static PATH: &str = std::env!("CARGO_BIN_EXE_surf");
 fn get_200_status() {
     let output = Command::new(PATH)
         .arg("https://jsonplaceholder.typicode.com/todos/1")
+        .arg("--status")
         .output()
         .unwrap();
 
