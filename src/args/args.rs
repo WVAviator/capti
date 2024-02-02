@@ -5,6 +5,6 @@ use clap::Parser;
 pub struct Args {
     pub url: String,
 
-    #[arg(short, long, help = "Prints the HTTP response status code.")]
+    #[arg(short, long, help = "Print the HTTP response status code.")]
     pub status: bool,
 }

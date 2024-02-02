@@ -875,6 +875,7 @@ name = "surf"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "lazy_static",
  "reqwest",
  "serde",
  "serde_json",

@@ -4,7 +4,10 @@ static PATH: &str = std::env!("CARGO_BIN_EXE_surf");
 
 #[test]
 fn url_only() {
-    let output = Command::new(PATH).arg("www.test.com").output().unwrap();
+    let output = Command::new(PATH)
+        .arg("https://jsonplaceholder.typicode.com/todos/1")
+        .output()
+        .unwrap();
 
     assert_eq!(output.status.code().unwrap(), 0);
 }
