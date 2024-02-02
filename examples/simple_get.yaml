@@ -1,0 +1,23 @@
+suite: "Simple Get Request Tests"
+description: "This suite tests various simple get requests"
+
+setup:
+  before_all:
+    - description: "start the app server"
+      script: "echo \"npm start\""
+
+tests:
+  - test: "get basic info"
+    description: "test a simple get request"
+    request:
+      method: GET
+      url: "https://jsonplaceholder.typicode.com/todos/1"
+    expect:
+      status: 200
+      headers:
+        Content-Type: "application/json"
+      body:
+        userId: 1
+        id: 1
+        title: "delectus aut autem"
+        completed: false
