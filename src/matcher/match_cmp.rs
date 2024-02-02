@@ -1,6 +1,8 @@
-use std::{collections::HashMap, hash::Hash};
+use std::{collections::HashMap, fmt::Debug, hash::Hash};
 
 use serde_json::Value;
+
+use super::match_result::MatchResult;
 
 /// The MatchCmp trait implements match_cmp, which allows an object to be compared to another,
 /// where the other object can have additional fields that are ignored. This is commonly referenced
@@ -10,82 +12,98 @@ use serde_json::Value;
 ///
 /// Fields in A may also match fields in B if certain matcher conditions are met.
 pub trait MatchCmp {
-    fn match_cmp(&self, other: &Self) -> bool;
+    fn match_cmp(&self, other: &Self) -> MatchResult;
 }
 
 impl<T> MatchCmp for Option<T>
 where
-    T: MatchCmp,
+    T: MatchCmp + Debug,
 {
-    fn match_cmp(&self, other: &Self) -> bool {
+    fn match_cmp(&self, other: &Self) -> MatchResult {
         match (self, other) {
             (Some(a), Some(b)) => return a.match_cmp(b),
-            (None, _) => return true,
-            (Some(_), None) => return false,
+            (None, _) => return MatchResult::Matches,
+            (Some(a), None) => return MatchResult::Missing(format!("{:#?}", a)),
         }
     }
 }
 
 impl MatchCmp for String {
-    fn match_cmp(&self, other: &Self) -> bool {
-        return self.eq(other);
+    fn match_cmp(&self, other: &Self) -> MatchResult {
+        match self.eq(other) {
+            true => MatchResult::Matches,
+            false => MatchResult::ValueMismatch(self.into(), other.into()),
+        }
     }
 }
 
 impl MatchCmp for u16 {
-    fn match_cmp(&self, other: &Self) -> bool {
-        return self.eq(other);
+    fn match_cmp(&self, other: &Self) -> MatchResult {
+        match self.eq(other) {
+            true => MatchResult::Matches,
+            false => MatchResult::ValueMismatch(self.to_string(), other.to_string()),
+        }
     }
 }
 
 impl<K, V> MatchCmp for HashMap<K, V>
 where
-    K: Eq + PartialEq + Hash,
+    K: Eq + PartialEq + Hash + Debug,
     V: MatchCmp,
 {
-    fn match_cmp(&self, other: &Self) -> bool {
+    fn match_cmp(&self, other: &Self) -> MatchResult {
         for (key, value) in self {
             match other.get(&key) {
-                Some(other_value) if value.match_cmp(other_value) => {}
-                _ => return false,
+                Some(other_value) => match value.match_cmp(other_value) {
+                    MatchResult::Matches => continue,
+                    other => return other,
+                },
+                _ => return MatchResult::Missing(format!("{:#?}", &key)),
             }
         }
 
-        return true;
+        return MatchResult::Matches;
     }
 }
 
 impl MatchCmp for serde_json::Map<String, serde_json::Value> {
-    fn match_cmp(&self, other: &Self) -> bool {
+    fn match_cmp(&self, other: &Self) -> MatchResult {
         for (key, value) in self.iter() {
             match other.get(key.as_str()) {
-                Some(other_value) if value.match_cmp(other_value) => {}
-                _ => return false,
+                Some(other_value) => match value.match_cmp(other_value) {
+                    MatchResult::Matches => continue,
+                    other => return other,
+                },
+                _ => return MatchResult::Missing(format!("{:#?}", &key)),
             }
         }
 
-        return true;
+        return MatchResult::Matches;
     }
 }
 
-impl<T: MatchCmp> MatchCmp for [T]
+impl<T> MatchCmp for [T]
 where
-    T: MatchCmp,
+    T: MatchCmp + Debug,
 {
-    fn match_cmp(&self, other: &Self) -> bool {
+    fn match_cmp(&self, other: &Self) -> MatchResult {
         let mut self_iter = self.iter().peekable();
         let mut other_iter = other.iter();
         while let Some(other_val) = other_iter.next() {
             match self_iter.peek() {
                 Some(value) => {
-                    if value.match_cmp(other_val) {
+                    if value.match_cmp(other_val) == MatchResult::Matches {
                         self_iter.next();
                     }
                 }
-                None => return true,
+                None => return MatchResult::Matches,
             }
         }
-        return false;
+        return MatchResult::CollectionMismatch(
+            format!("{:#?}", self),
+            format!("{:#?}", other),
+            self_iter.count(),
+        );
     }
 }
 
@@ -118,15 +136,15 @@ where
 // }
 
 impl MatchCmp for serde_json::Value {
-    fn match_cmp(&self, other: &Self) -> bool {
+    fn match_cmp(&self, other: &Self) -> MatchResult {
         match (self, &other) {
             (Value::Object(map), Value::Object(other_map)) => map.match_cmp(other_map),
             (Value::Array(arr), Value::Array(other_arr)) => arr.match_cmp(other_arr),
-            (Value::Null, _) => true,
-            (Value::Bool(b), Value::Bool(other_b)) => b == other_b,
-            (Value::Number(n), Value::Number(other_n)) => n == other_n,
-            (Value::String(s), Value::String(other_s)) => s == other_s,
-            _ => false,
+            (Value::Null, _) => MatchResult::Matches,
+            (Value::Bool(b), Value::Bool(other_b)) if b == other_b => MatchResult::Matches,
+            (Value::Number(n), Value::Number(other_n)) if n == other_n => MatchResult::Matches,
+            (Value::String(s), Value::String(other_s)) if s == other_s => MatchResult::Matches,
+            _ => MatchResult::ValueMismatch(format!("{:#?}", self), format!("{:#?}", other)),
         }
     }
 }
@@ -158,14 +176,14 @@ mod test {
             }
         });
 
-        assert!(json1.match_cmp(&json2));
+        assert!(json1.match_cmp(&json2) == MatchResult::Matches);
     }
 
     #[test]
     fn json_value_includes_array() {
         let json1 = json!([1, 2, 3]);
         let json2 = json!([1, 2, 3, 4]);
-        assert!(json1.match_cmp(&json2));
+        assert!(json1.match_cmp(&json2) == MatchResult::Matches);
     }
 
     #[test]
@@ -179,6 +197,6 @@ mod test {
         map2.insert(String::from("key2"), String::from("value2"));
         map2.insert(String::from("key3"), String::from("value3"));
 
-        assert!(map1.match_cmp(&map2));
+        assert!(map1.match_cmp(&map2) == MatchResult::Matches);
     }
 }

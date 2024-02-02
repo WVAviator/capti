@@ -1,9 +1,15 @@
-use std::collections::HashMap;
+use std::{
+    collections::HashMap,
+    fmt::{self, Debug},
+};
 
 use reqwest::RequestBuilder;
 use serde::{Deserialize, Serialize};
 
-use crate::{client::client::get_client, matcher::MatchCmp};
+use crate::{
+    client::client::get_client,
+    matcher::{match_result::MatchResult, MatchCmp},
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Test {
@@ -25,18 +31,45 @@ impl Test {
 
         let response = ResponseDefinition::from_response(response).await;
 
-        if self.expect.compare(&response) {
-            TestResult::Passed
-        } else {
-            TestResult::Failed
+        self.expect.compare(&response)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TestResult {
+    Passed,
+    Failed(FailureReport),
+    Error(String),
+}
+
+impl TestResult {
+    pub fn fail(message: impl Into<String>, match_result: &MatchResult) -> Self {
+        TestResult::Failed(FailureReport::new(message, match_result.clone()))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct FailureReport {
+    message: String,
+    match_result: MatchResult,
+}
+
+impl FailureReport {
+    pub fn new(message: impl Into<String>, match_result: MatchResult) -> Self {
+        FailureReport {
+            message: message.into(),
+            match_result,
         }
     }
 }
 
-pub enum TestResult {
-    Passed,
-    Failed,
-    Error(String),
+impl fmt::Display for FailureReport {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}", self.message)?;
+        writeln!(f, "{}", self.match_result)?;
+
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -116,20 +149,23 @@ impl ResponseDefinition {
         }
     }
 
-    pub fn compare(&self, other: &ResponseDefinition) -> bool {
-        if !self.status.match_cmp(&other.status) {
-            return false;
+    pub fn compare(&self, other: &ResponseDefinition) -> TestResult {
+        match self.status.match_cmp(&other.status) {
+            MatchResult::Matches => {}
+            other => return TestResult::fail("Status does not match.", &other),
         }
 
-        if !self.headers.match_cmp(&other.headers) {
-            return false;
+        match self.headers.match_cmp(&other.headers) {
+            MatchResult::Matches => {}
+            other => return TestResult::fail("Headers do not match.", &other),
         }
 
-        if !self.body.match_cmp(&other.body) {
-            return false;
+        match self.body.match_cmp(&other.body) {
+            MatchResult::Matches => {}
+            other => return TestResult::fail("Body does not match.", &other),
         }
 
-        return true;
+        return TestResult::Passed;
     }
 }
 
@@ -152,7 +188,7 @@ mod test {
             status: Some(200),
         };
 
-        assert!(matcher.compare(&response));
+        assert_eq!(matcher.compare(&response), TestResult::Passed);
     }
 
     #[test]
@@ -167,6 +203,7 @@ mod test {
             body: None,
             status: Some(200),
         };
-        assert!(matcher.compare(&response));
+
+        assert_eq!(matcher.compare(&response), TestResult::Passed);
     }
 }

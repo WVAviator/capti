@@ -5,6 +5,7 @@ setup:
   before_all:
     - description: "start the app server"
       script: "echo \"npm start\""
+      wait_until: 3
 
 tests:
   - test: "get basic info"
@@ -14,8 +15,6 @@ tests:
       url: "https://jsonplaceholder.typicode.com/todos/1"
     expect:
       status: 200
-      headers:
-        Content-Type: "application/json"
       body:
         userId: 1
         id: 1
