@@ -23,7 +23,12 @@ where
         match (self, other) {
             (Some(a), Some(b)) => return a.match_cmp(b),
             (None, _) => return MatchResult::Matches,
-            (Some(a), None) => return MatchResult::Missing(format!("{:#?}", a)),
+            (Some(a), None) => {
+                return MatchResult::Missing {
+                    key: format!("{:#?}", a),
+                    context: None,
+                }
+            }
         }
     }
 }
@@ -32,7 +37,11 @@ impl MatchCmp for String {
     fn match_cmp(&self, other: &Self) -> MatchResult {
         match self.eq(other) {
             true => MatchResult::Matches,
-            false => MatchResult::ValueMismatch(self.into(), other.into()),
+            false => MatchResult::ValueMismatch {
+                expected: self.into(),
+                actual: other.into(),
+                context: None,
+            },
         }
     }
 }
@@ -41,7 +50,11 @@ impl MatchCmp for u16 {
     fn match_cmp(&self, other: &Self) -> MatchResult {
         match self.eq(other) {
             true => MatchResult::Matches,
-            false => MatchResult::ValueMismatch(self.to_string(), other.to_string()),
+            false => MatchResult::ValueMismatch {
+                expected: self.to_string(),
+                actual: other.to_string(),
+                context: None,
+            },
         }
     }
 }
@@ -49,16 +62,25 @@ impl MatchCmp for u16 {
 impl<K, V> MatchCmp for HashMap<K, V>
 where
     K: Eq + PartialEq + Hash + Debug,
-    V: MatchCmp,
+    V: MatchCmp + Debug,
 {
     fn match_cmp(&self, other: &Self) -> MatchResult {
         for (key, value) in self {
             match other.get(&key) {
                 Some(other_value) => match value.match_cmp(other_value) {
                     MatchResult::Matches => continue,
-                    other => return other,
+                    o => {
+                        return o
+                            .with_context(format!("at compare ( {:#?}: {:#?} )", &key, &value))
+                            .with_context(format!("at compare ( {:#?} : {:#?} )", &self, &other))
+                    }
                 },
-                _ => return MatchResult::Missing(format!("{:#?}", &key)),
+                _ => {
+                    return MatchResult::Missing {
+                        key: format!("{:#?}", &key),
+                        context: Some(format!("at compare ( {:#?}: {:#?} )", &key, &value)),
+                    }
+                }
             }
         }
 
@@ -72,9 +94,18 @@ impl MatchCmp for serde_json::Map<String, serde_json::Value> {
             match other.get(key.as_str()) {
                 Some(other_value) => match value.match_cmp(other_value) {
                     MatchResult::Matches => continue,
-                    other => return other,
+                    o => {
+                        return o
+                            .with_context(format!("at compare ( {:#?}: {:#?} )", &key, &value))
+                            .with_context(format!("at compare ( {:#?} : {:#?} )", &self, &other))
+                    }
                 },
-                _ => return MatchResult::Missing(format!("{:#?}", &key)),
+                _ => {
+                    return MatchResult::Missing {
+                        key: format!("{:#?}", &key),
+                        context: Some(format!("at compare ( {:#?}: {:#?} )", &key, &value)),
+                    }
+                }
             }
         }
 
@@ -99,11 +130,12 @@ where
                 None => return MatchResult::Matches,
             }
         }
-        return MatchResult::CollectionMismatch(
-            format!("{:#?}", self),
-            format!("{:#?}", other),
-            self_iter.count(),
-        );
+        return MatchResult::CollectionMismatch {
+            expected: format!("{:#?}", self),
+            actual: format!("{:#?}", other),
+            remaining: self_iter.count(),
+            context: None,
+        };
     }
 }
 
@@ -138,13 +170,21 @@ where
 impl MatchCmp for serde_json::Value {
     fn match_cmp(&self, other: &Self) -> MatchResult {
         match (self, &other) {
-            (Value::Object(map), Value::Object(other_map)) => map.match_cmp(other_map),
-            (Value::Array(arr), Value::Array(other_arr)) => arr.match_cmp(other_arr),
+            (Value::Object(map), Value::Object(other_map)) => map
+                .match_cmp(other_map)
+                .with_context(format!("at compare ( {:#?} : {:#?} )", self, other)),
+            (Value::Array(arr), Value::Array(other_arr)) => arr
+                .match_cmp(other_arr)
+                .with_context(format!("at compare ( {:#?} : {:#?} )", self, other)),
             (Value::Null, _) => MatchResult::Matches,
             (Value::Bool(b), Value::Bool(other_b)) if b == other_b => MatchResult::Matches,
             (Value::Number(n), Value::Number(other_n)) if n == other_n => MatchResult::Matches,
             (Value::String(s), Value::String(other_s)) if s == other_s => MatchResult::Matches,
-            _ => MatchResult::ValueMismatch(format!("{:#?}", self), format!("{:#?}", other)),
+            _ => MatchResult::ValueMismatch {
+                expected: format!("{:#?}", self),
+                actual: format!("{:#?}", other),
+                context: None,
+            },
         }
     }
 }
