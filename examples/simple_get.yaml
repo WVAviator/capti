@@ -20,3 +20,23 @@ tests:
         id: 1
         title: "delectus aut autem"
         completed: false
+
+  - test: "exists matcher"
+    description: "test a simple get request with exists matcher"
+    request:
+      method: GET
+      url: "https://jsonplaceholder.typicode.com/todos/1"
+    expect:
+      body:
+        userId: $exists
+        id: 1
+        title: $exists
+
+  - test: "exists matcher escaped"
+    description: "test a simple get request with escaped exists matcher"
+    request:
+      method: GET
+      url: "https://jsonplaceholder.typicode.com/todos/1"
+    expect:
+      body:
+        userId: \$exists

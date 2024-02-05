@@ -19,7 +19,6 @@ impl Suite {
         println!("Running {} tests...", self.tests.len());
 
         if let Some(setup) = &self.setup {
-            println!("Executing suite setup...");
             setup.execute_before_all();
         }
 
@@ -45,7 +44,6 @@ impl Suite {
         let report = TestResultsReport::new(results);
 
         if let Some(setup) = &self.setup {
-            println!("Executing suite teardown...");
             setup.execute_after_all();
         }
 
@@ -77,6 +75,8 @@ mod test {
         let example_suite = fs::read_to_string("examples/simple_get.yaml").unwrap();
         let suite = serde_yaml::from_str::<Suite>(&example_suite).unwrap();
         let results_report = suite.run().await;
-        assert_eq!(results_report.passed, 1);
+
+        assert_eq!(results_report.passed, 2);
+        assert_eq!(results_report.failed, 1);
     }
 }
