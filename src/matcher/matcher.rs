@@ -26,18 +26,17 @@ fn extract_regex(s: &str) -> Option<Regex> {
     // format: $regex{ /regex/ }
     let mut regex_str = s
         .chars()
-        .skip_while(|c| c.ne(&'{'))
+        .skip_while(|c| c.ne(&'/'))
         .skip(1)
         .collect::<Vec<char>>();
     while let Some(c) = regex_str.pop() {
-        if c.eq(&'}') {
+        if c.eq(&'/') {
             break;
         }
     }
     let regex_statement = regex_str.into_iter().collect::<String>();
-    let regex_statement = regex_statement.trim();
 
-    Regex::new(regex_statement).ok()
+    Regex::new(&regex_statement).ok()
 }
 
 impl From<&str> for Matcher {
@@ -102,8 +101,26 @@ mod test {
 
     #[test]
     fn extract_regex_fn() {
-        let regex_str = "$regex{ /(\\{\\})/ }";
+        let regex_str = "$regex /(\\{\\})/";
         let regex = extract_regex(regex_str).unwrap();
-        assert_eq!(regex.to_string(), "/(\\{\\})/");
+        assert_eq!(regex.to_string(), "(\\{\\})");
+    }
+
+    #[test]
+    fn matches_regex_expression() {
+        let regex_str = "$regex /.*[Hh]ello!.*/";
+        let match_string = serde_json::Value::String(String::from("Hello! How are you?"));
+
+        let matcher = Matcher::from(regex_str);
+        let matches = matcher.matches_value(&match_string);
+
+        assert!(matches);
+    }
+
+    #[test]
+    fn test_regex() {
+        let re = Regex::new(r".*[Hh]ello!.*").unwrap();
+        let hay = "Hello! How are you?";
+        assert!(re.is_match(hay));
     }
 }

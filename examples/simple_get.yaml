@@ -40,3 +40,12 @@ tests:
     expect:
       body:
         userId: \$exists
+
+  - test: "regex matcher"
+    description: "test a simple get request with regex matcher"
+    request:
+      method: GET
+      url: "https://jsonplaceholder.typicode.com/todos/1"
+    expect:
+      body:
+        title: $regex / aut /
