@@ -1,10 +1,13 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
-use crate::suite::report::{ReportedResult, TestResultsReport};
+use crate::suite::{
+    report::{ReportedResult, TestResultsReport},
+    setup::SuiteSetup,
+};
 
-use super::{suite_setup::SuiteSetup, test::Test};
+use super::test::Test;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct Suite {
     suite: String,
     description: Option<String>,

@@ -1,10 +1,14 @@
-use std::process::Command;
+use std::{
+    net::{SocketAddr, TcpStream},
+    process::Command,
+    time::Duration,
+};
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use super::wait_instruction::WaitInstruction;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct SuiteSetup {
     before_all: Option<Vec<SetupInstruction>>,
     before_each: Option<Vec<SetupInstruction>>,
@@ -12,7 +16,7 @@ pub struct SuiteSetup {
     after_each: Option<Vec<SetupInstruction>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct SetupInstruction {
     description: Option<String>,
     script: String,
@@ -87,7 +91,7 @@ impl SuiteSetup {
                         &instruction.script, e
                     );
                 })?;
-                std::thread::sleep(std::time::Duration::from_secs_f32(seconds));
+                std::thread::sleep(std::time::Duration::from_secs_f64(seconds));
             }
             Some(WaitInstruction::Port(port)) => {
                 cmd.spawn().map_err(|e| {
@@ -208,7 +212,7 @@ mod test {
                 },
                 {
                     "script": "sleep 1",
-                    "wait_until": 0.5,
+                    "wait_until": 0.5
                 },
             ]
         });
