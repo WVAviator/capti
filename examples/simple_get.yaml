@@ -1,0 +1,59 @@
+suite: "Simple Get Request Tests"
+description: "This suite tests various simple get requests"
+
+setup:
+  before_all:
+    - description: "start the app server"
+      script: "echo \"npm start\""
+      wait_until: 1
+
+tests:
+  - test: "get basic info"
+    description: "test a simple get request"
+    request:
+      method: GET
+      url: "https://jsonplaceholder.typicode.com/todos/1"
+    expect:
+      status: 200
+      body:
+        userId: 1
+        id: 1
+        title: "delectus aut autem"
+        completed: false
+
+  - test: "status matcher"
+    description: "test matching status by matcher pattern"
+    request:
+      method: GET
+      url: "https://jsonplaceholder.typicode.com/todos/1"
+    expect:
+      status: 2xx
+
+  - test: "exists matcher"
+    description: "test a simple get request with exists matcher"
+    request:
+      method: GET
+      url: "https://jsonplaceholder.typicode.com/todos/1"
+    expect:
+      body:
+        userId: $exists
+        id: 1
+        title: $exists
+
+  - test: "exists matcher escaped"
+    description: "test a simple get request with escaped exists matcher"
+    request:
+      method: GET
+      url: "https://jsonplaceholder.typicode.com/todos/1"
+    expect:
+      body:
+        userId: \$exists
+
+  - test: "regex matcher"
+    description: "test a simple get request with regex matcher"
+    request:
+      method: GET
+      url: "https://jsonplaceholder.typicode.com/todos/1"
+    expect:
+      body:
+        title: $regex / aut /

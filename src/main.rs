@@ -1,13 +1,13 @@
 use clap::Parser;
+use surf::{Args, ResponseOutput};
 
-#[derive(Debug, Parser)]
-#[command(author, version, about, long_about = None)]
-struct Args {
-    url: String,
-}
-
-fn main() {
+#[tokio::main]
+async fn main() {
     let args = Args::parse();
 
-    println!("url: {}", args.url);
+    let output = ResponseOutput::new(args)
+        .await
+        .expect("Failed to fetch response.");
+
+    print!("{}", output);
 }
