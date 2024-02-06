@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::suite::report::{ReportedResult, TestResultsReport};
 
-use super::{setup::SuiteSetup, test::Test};
+use super::{suite_setup::SuiteSetup, test::Test};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Suite {
