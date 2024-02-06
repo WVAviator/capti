@@ -1,8 +1,14 @@
-use std::process::Command;
+use std::{
+    net::{SocketAddr, TcpStream},
+    process::Command,
+    time::Duration,
+};
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+use super::wait_instruction::WaitInstruction;
+
+#[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct SuiteSetup {
     before_all: Option<Vec<SetupInstruction>>,
     before_each: Option<Vec<SetupInstruction>>,
@@ -10,19 +16,11 @@ pub struct SuiteSetup {
     after_each: Option<Vec<SetupInstruction>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct SetupInstruction {
     description: Option<String>,
     script: String,
     wait_until: Option<WaitInstruction>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum WaitInstruction {
-    #[serde(rename = "finished")]
-    Finished,
-    #[serde(untagged)]
-    Seconds(f32),
 }
 
 impl SuiteSetup {
@@ -93,7 +91,30 @@ impl SuiteSetup {
                         &instruction.script, e
                     );
                 })?;
-                std::thread::sleep(std::time::Duration::from_secs_f32(seconds));
+                std::thread::sleep(std::time::Duration::from_secs_f64(seconds));
+            }
+            Some(WaitInstruction::Port(port)) => {
+                cmd.spawn().map_err(|e| {
+                    eprintln!(
+                        "Failed to spawn script instruction: {}\n{:#?}",
+                        &instruction.script, e
+                    );
+                })?;
+
+                let addr: SocketAddr = format!("127.0.0.1:{}", &port).parse().map_err(|e| {
+                    eprintln!(
+                        "Failed to parse socket from port address: {}\n{:#?}",
+                        &instruction.script, e
+                    );
+                })?;
+
+                println!("Waiting for port {} to open.", &port);
+
+                loop {
+                    if let Ok(_) = TcpStream::connect_timeout(&addr, Duration::from_secs(1)) {
+                        break;
+                    }
+                }
             }
             None => {
                 cmd.spawn().map_err(|e| {
@@ -191,7 +212,7 @@ mod test {
                 },
                 {
                     "script": "sleep 1",
-                    "wait_until": 0.5,
+                    "wait_until": 0.5
                 },
             ]
         });
