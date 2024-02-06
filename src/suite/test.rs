@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     client::client::get_client,
-    matcher::{match_result::MatchResult, MatchCmp},
+    matcher::{match_result::MatchResult, status_matcher::StatusMatcher, MatchCmp},
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -109,14 +109,14 @@ pub enum RequestMethod {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ResponseDefinition {
-    pub status: Option<u16>,
+    pub status: Option<StatusMatcher>,
     pub headers: Option<HashMap<String, String>>,
     pub body: Option<serde_json::Value>,
 }
 
 impl ResponseDefinition {
     pub async fn from_response(response: reqwest::Response) -> Self {
-        let status = Some(response.status().as_u16());
+        let status = Some(StatusMatcher::Exact(response.status().as_u16()));
         let header_map = response.headers().clone();
         let headers = header_map
             .into_iter()
@@ -185,7 +185,7 @@ mod test {
         let response = ResponseDefinition {
             headers: Some(HashMap::new()),
             body: Some(json!({ "test": "test" })),
-            status: Some(200),
+            status: Some(StatusMatcher::Exact(200)),
         };
 
         assert_eq!(matcher.compare(&response), TestResult::Passed);
@@ -196,12 +196,12 @@ mod test {
         let matcher = ResponseDefinition {
             headers: None,
             body: None,
-            status: Some(200),
+            status: Some(StatusMatcher::Class(String::from("2xx"))),
         };
         let response = ResponseDefinition {
             headers: None,
             body: None,
-            status: Some(200),
+            status: Some(StatusMatcher::Exact(200)),
         };
 
         assert_eq!(matcher.compare(&response), TestResult::Passed);

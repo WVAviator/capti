@@ -21,6 +21,14 @@ tests:
         title: "delectus aut autem"
         completed: false
 
+  - test: "status matcher"
+    description: "test matching status by matcher pattern"
+    request:
+      method: GET
+      url: "https://jsonplaceholder.typicode.com/todos/1"
+    expect:
+      status: 2xx
+
   - test: "exists matcher"
     description: "test a simple get request with exists matcher"
     request:
