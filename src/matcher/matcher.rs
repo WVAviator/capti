@@ -1,6 +1,9 @@
+use regex::Regex;
+
 pub enum Matcher {
     Exact(String),
     Exists,
+    Regex(Regex),
 }
 
 impl Matcher {
@@ -11,8 +14,30 @@ impl Matcher {
                 serde_json::Value::String(s) => expected.eq(s),
                 _ => false,
             },
+            Matcher::Regex(regex) => match value {
+                serde_json::Value::String(s) => regex.is_match(s),
+                _ => false,
+            },
         }
     }
+}
+
+fn extract_regex(s: &str) -> Option<Regex> {
+    // format: $regex{ /regex/ }
+    let mut regex_str = s
+        .chars()
+        .skip_while(|c| c.ne(&'{'))
+        .skip(1)
+        .collect::<Vec<char>>();
+    while let Some(c) = regex_str.pop() {
+        if c.eq(&'}') {
+            break;
+        }
+    }
+    let regex_statement = regex_str.into_iter().collect::<String>();
+    let regex_statement = regex_statement.trim();
+
+    Regex::new(regex_statement).ok()
 }
 
 impl From<&str> for Matcher {
@@ -20,6 +45,10 @@ impl From<&str> for Matcher {
         match value {
             s if s.starts_with("\\$") => Matcher::Exact(s[1..].to_string()),
             "$exists" => Matcher::Exists,
+            s if s.starts_with("$regex") => match extract_regex(s) {
+                Some(regex) => Matcher::Regex(regex),
+                None => Matcher::Exact(s.to_string()),
+            },
             _ => Matcher::Exact(value.to_string()),
         }
     }
@@ -69,5 +98,12 @@ mod test {
         let matches = Matcher::from("\\$exists")
             .matches_value(&serde_json::Value::String(String::from("$exists")));
         assert!(matches);
+    }
+
+    #[test]
+    fn extract_regex_fn() {
+        let regex_str = "$regex{ /(\\{\\})/ }";
+        let regex = extract_regex(regex_str).unwrap();
+        assert_eq!(regex.to_string(), "/(\\{\\})/");
     }
 }
