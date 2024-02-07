@@ -1,31 +1,30 @@
 suite: "Simple Get Request Tests"
-description: "This suite tests various simple get requests"
+description: "This suite tests various simple get requests to the /hello endpoint"
 
 setup:
   before_all:
     - description: "start the app server"
-      script: "echo \"npm start\""
-      wait_until: 1
+      script: "cd test_app && npm start"
+      wait_until: port 3000
 
 tests:
   - test: "get basic info"
     description: "test a simple get request"
     request:
       method: GET
-      url: "https://jsonplaceholder.typicode.com/todos/1"
+      url: "http://localhost:3000/hello"
     expect:
       status: 200
       body:
-        userId: 1
         id: 1
-        title: "delectus aut autem"
+        message: "Hello, world!"
         completed: false
 
   - test: "status matcher"
     description: "test matching status by matcher pattern"
     request:
       method: GET
-      url: "https://jsonplaceholder.typicode.com/todos/1"
+      url: "http://localhost:3000/hello"
     expect:
       status: 2xx
 
@@ -33,27 +32,26 @@ tests:
     description: "test a simple get request with exists matcher"
     request:
       method: GET
-      url: "https://jsonplaceholder.typicode.com/todos/1"
+      url: "http://localhost:3000/hello"
     expect:
       body:
-        userId: $exists
-        id: 1
-        title: $exists
+        id: $exists
+        message: $exists
 
   - test: "exists matcher escaped"
     description: "test a simple get request with escaped exists matcher"
     request:
       method: GET
-      url: "https://jsonplaceholder.typicode.com/todos/1"
+      url: "http://localhost:3000/hello"
     expect:
       body:
-        userId: \$exists
+        id: \$exists
 
   - test: "regex matcher"
     description: "test a simple get request with regex matcher"
     request:
       method: GET
-      url: "https://jsonplaceholder.typicode.com/todos/1"
+      url: "http://localhost:3000/hello"
     expect:
       body:
-        title: $regex / aut /
+        message: $regex /[Hh]ello/
