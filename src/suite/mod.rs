@@ -1,4 +1,5 @@
 pub mod report;
+pub mod request;
 pub mod setup;
 pub mod suite;
 pub mod test;

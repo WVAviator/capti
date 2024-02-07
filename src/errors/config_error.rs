@@ -13,4 +13,10 @@ pub enum ConfigurationError {
         #[from]
         source: std::io::Error,
     },
+
+    #[error("Error occurred parsing regex expression: {source}")]
+    RegexError {
+        #[from]
+        source: regex::Error,
+    },
 }

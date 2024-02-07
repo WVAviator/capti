@@ -68,7 +68,7 @@ impl Suite {
 mod test {
     use std::fs;
 
-    use crate::suite::test::RequestMethod;
+    use crate::suite::request::request_method::RequestMethod;
 
     use super::*;
 
