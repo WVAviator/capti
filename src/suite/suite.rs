@@ -1,8 +1,11 @@
 use serde::Deserialize;
 
-use crate::suite::{
-    report::{ReportedResult, TestResultsReport},
-    setup::SuiteSetup,
+use crate::{
+    errors::config_error::ConfigurationError,
+    suite::{
+        report::{ReportedResult, TestResultsReport},
+        setup::SuiteSetup,
+    },
 };
 
 use super::test::Test;
@@ -16,6 +19,12 @@ pub struct Suite {
 }
 
 impl Suite {
+    pub fn from_file(path: &str) -> Result<Self, ConfigurationError> {
+        let suite = std::fs::read_to_string(path)?;
+        let suite = serde_yaml::from_str::<Suite>(&suite)?;
+        return Ok(suite);
+    }
+
     pub async fn run(&self) -> TestResultsReport {
         let mut results = vec![];
 

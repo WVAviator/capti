@@ -1,13 +1,17 @@
 use clap::Parser;
-use surf::{Args, ResponseOutput};
+use surf::errors::config_error::ConfigurationError;
+use surf::Args;
+use surf::Suite;
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<(), ConfigurationError> {
     let args = Args::parse();
 
-    let output = ResponseOutput::new(args)
-        .await
-        .expect("Failed to fetch response.");
+    let suite = Suite::from_file(&args.path)?;
 
-    print!("{}", output);
+    let report = suite.run().await;
+
+    print!("{}", report);
+
+    Ok(())
 }
