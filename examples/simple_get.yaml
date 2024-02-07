@@ -39,6 +39,7 @@ tests:
         message: $exists
 
   - test: "exists matcher escaped"
+    should_fail: true
     description: "test a simple get request with escaped exists matcher"
     request:
       method: GET

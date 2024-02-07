@@ -79,7 +79,7 @@ mod test {
         let suite = serde_yaml::from_str::<Suite>(&example_suite).unwrap();
         let results_report = suite.run().await;
 
-        assert_eq!(results_report.passed, 4);
-        assert_eq!(results_report.failed, 1);
+        assert_eq!(results_report.passed, 5);
+        assert_eq!(results_report.failed, 0);
     }
 }

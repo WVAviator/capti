@@ -15,6 +15,8 @@ use crate::{
 pub struct Test {
     pub test: String,
     pub description: Option<String>,
+    #[serde(default)]
+    pub should_fail: bool,
     pub request: RequestDefinition,
     pub expect: ResponseDefinition,
 }
@@ -31,7 +33,16 @@ impl Test {
 
         let response = ResponseDefinition::from_response(response).await;
 
-        self.expect.compare(&response)
+        let test_result = self.expect.compare(&response);
+
+        match (test_result, self.should_fail) {
+            (TestResult::Passed, true) => TestResult::Failed(FailureReport::new(
+                "Expected failure, but test passed.",
+                MatchResult::Matches,
+            )),
+            (TestResult::Failed(_), true) => TestResult::Passed,
+            (result, _) => result,
+        }
     }
 }
 
