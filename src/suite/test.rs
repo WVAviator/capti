@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     client::client::get_client,
+    errors::config_error::ConfigurationError,
     matcher::{match_result::MatchResult, status_matcher::StatusMatcher, MatchCmp},
 };
 
@@ -23,27 +24,26 @@ pub struct Test {
 }
 
 impl Test {
-    pub async fn execute(&self) -> TestResult {
+    pub async fn execute(&self) -> Result<TestResult, ConfigurationError> {
         let client = get_client();
 
-        let request = self.request.build_client_request(&client);
-        let response = match request.send().await {
-            Ok(response) => response,
-            Err(e) => return TestResult::Error(e.to_string()),
-        };
+        let request = self.request.build_client_request(&client)?;
+        let response = request.send().await?;
 
         let response = ResponseDefinition::from_response(response).await;
 
         let test_result = self.expect.compare(&response);
 
-        match (test_result, self.should_fail) {
+        let test_result = match (test_result, self.should_fail) {
             (TestResult::Passed, true) => TestResult::Failed(FailureReport::new(
                 "Expected failure, but test passed.",
                 MatchResult::Matches,
             )),
             (TestResult::Failed(_), true) => TestResult::Passed,
             (result, _) => result,
-        }
+        };
+
+        return Ok(test_result);
     }
 }
 
@@ -51,7 +51,6 @@ impl Test {
 pub enum TestResult {
     Passed,
     Failed(FailureReport),
-    Error(String),
 }
 
 impl TestResult {

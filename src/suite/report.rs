@@ -2,6 +2,8 @@ use std::fmt;
 
 use colored::Colorize;
 
+use crate::errors::config_error::ConfigurationError;
+
 use super::test::{Test, TestResult};
 
 pub struct TestResultsReport {
@@ -14,11 +16,11 @@ pub struct TestResultsReport {
 
 pub struct ReportedResult {
     pub test: Test,
-    pub result: TestResult,
+    pub result: Result<TestResult, ConfigurationError>,
 }
 
 impl ReportedResult {
-    pub fn new(test: &Test, result: TestResult) -> Self {
+    pub fn new(test: &Test, result: Result<TestResult, ConfigurationError>) -> Self {
         ReportedResult {
             test: test.clone(),
             result,
@@ -29,9 +31,9 @@ impl ReportedResult {
 impl fmt::Display for ReportedResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.result {
-            TestResult::Passed => write!(f, "{}... {}", self.test.test, "[OK]".green()),
-            TestResult::Failed(_) => write!(f, "{}... {}", self.test.test, "[FAILED]".red()),
-            TestResult::Error(e) => {
+            Ok(TestResult::Passed) => write!(f, "{}... {}", self.test.test, "[OK]".green()),
+            Ok(TestResult::Failed(_)) => write!(f, "{}... {}", self.test.test, "[FAILED]".red()),
+            Err(e) => {
                 write!(f, "{}... {}\n{:#?}", self.test.test, "[ERROR]".red(), e)
             }
         }
@@ -46,9 +48,9 @@ impl TestResultsReport {
             tests
                 .iter()
                 .fold((0, 0, 0), |(passed, failed, errors), r| match r.result {
-                    TestResult::Passed => (passed + 1, failed, errors),
-                    TestResult::Failed(_) => (passed, failed + 1, errors),
-                    TestResult::Error(_) => (passed, failed, errors + 1),
+                    Ok(TestResult::Passed) => (passed + 1, failed, errors),
+                    Ok(TestResult::Failed(_)) => (passed, failed + 1, errors),
+                    Err(_) => (passed, failed, errors + 1),
                 });
 
         TestResultsReport {
@@ -64,7 +66,7 @@ impl TestResultsReport {
 impl fmt::Display for TestResultsReport {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for result in &self.results {
-            if let TestResult::Failed(failure) = &result.result {
+            if let Ok(TestResult::Failed(failure)) = &result.result {
                 writeln!(f, "{}", failure)?;
             }
         }
