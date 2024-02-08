@@ -47,6 +47,15 @@ impl Test {
     }
 }
 
+impl SuiteVariables for Test {
+    fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), ConfigurationError> {
+        self.request.populate_variables(variables)?;
+        self.expect.populate_variables(variables)?;
+
+        Ok(())
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TestResult {
     Passed,

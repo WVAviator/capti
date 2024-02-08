@@ -6,6 +6,7 @@ use crate::{
         report::{ReportedResult, TestResultsReport},
         setup::SuiteSetup,
     },
+    variables::VariableMap,
 };
 
 use super::test::Test;
@@ -16,6 +17,8 @@ pub struct Suite {
     description: Option<String>,
     setup: Option<SuiteSetup>,
     tests: Vec<Test>,
+    #[serde(default)]
+    variable_map: VariableMap,
 }
 
 impl Suite {
@@ -25,7 +28,7 @@ impl Suite {
         return Ok(suite);
     }
 
-    pub async fn run(&self) -> TestResultsReport {
+    pub async fn run(&mut self) -> TestResultsReport {
         let mut results = vec![];
 
         println!("Running {} tests...", self.tests.len());
@@ -36,6 +39,9 @@ impl Suite {
 
         for test in &self.tests {
             let test_execution = async move {
+
+                test.populate_variables(self.variable_map).expect("Error populating variables for test.");
+
                 if let Some(setup) = &self.setup {
                     setup.execute_before_each();
                 }
@@ -85,7 +91,7 @@ mod test {
     #[tokio::test]
     async fn executes_simple_get_example() {
         let example_suite = fs::read_to_string("examples/simple_get.yaml").unwrap();
-        let suite = serde_yaml::from_str::<Suite>(&example_suite).unwrap();
+        let mut suite = serde_yaml::from_str::<Suite>(&example_suite).unwrap();
         let results_report = suite.run().await;
 
         assert_eq!(results_report.passed, 5);

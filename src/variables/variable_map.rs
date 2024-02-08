@@ -4,6 +4,7 @@ use regex::Captures;
 
 use crate::errors::config_error::ConfigurationError;
 
+#[derive(Debug, Default)]
 pub struct VariableMap(HashMap<String, String>);
 
 impl VariableMap {

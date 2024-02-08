@@ -56,6 +56,15 @@ impl ResponseDefinition {
     }
 }
 
+impl SuiteVariables for ResponseDefinition {
+  fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), ConfigurationError> {
+    self.headers.populate_variables(variables)?;
+    self.body.populate_variables(variables)?;
+
+    Ok(())
+  }
+}
+
 // impl MatchCmp for ResponseDefinition {
 //   fn match_cmp(&self, other: &Self) -> MatchResult {
 //         match self.status.match_cmp(&other.status) {

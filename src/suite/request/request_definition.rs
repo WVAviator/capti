@@ -44,14 +44,8 @@ impl SuiteVariables for RequestDefinition {
         variables: &mut VariableMap,
     ) -> Result<(), ConfigurationError> {
         self.url = variables.replace_variables(&self.url)?;
-
-        if let Some(headers) = &mut self.headers {
-            headers.populate_variables(variables)?;
-        }
-
-        if let Some(body) = &mut self.body {
-            body.populate_variables(variables)?;
-        }
+        self.headers.populate_variables(variables)?;
+        self.body.populate_variables(variables)?;
 
         Ok(())
     }
