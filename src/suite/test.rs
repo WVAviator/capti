@@ -1,37 +1,57 @@
-use std::{
-    collections::HashMap,
-    fmt::{self, Debug},
-};
+use std::fmt::{self, Debug};
 
-use reqwest::RequestBuilder;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    client::client::get_client,
-    matcher::{match_result::MatchResult, status_matcher::StatusMatcher, MatchCmp},
+    client::Client,
+    errors::config_error::ConfigurationError,
+    matcher::match_result::MatchResult,
+    variables::{variable_map::VariableMap, SuiteVariables},
 };
+
+use super::{request::RequestDefinition, response::ResponseDefinition};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Test {
     pub test: String,
     pub description: Option<String>,
+    #[serde(default)]
+    pub should_fail: bool,
     pub request: RequestDefinition,
     pub expect: ResponseDefinition,
 }
 
 impl Test {
-    pub async fn execute(&self) -> TestResult {
-        let client = get_client();
-
-        let request = self.request.build_client_request(&client);
-        let response = match request.send().await {
-            Ok(response) => response,
-            Err(e) => return TestResult::Error(e.to_string()),
-        };
+    pub async fn execute(&self, client: &Client) -> Result<TestResult, ConfigurationError> {
+        let request = self.request.build_client_request(&client)?;
+        let response = request.send().await?;
 
         let response = ResponseDefinition::from_response(response).await;
 
-        self.expect.compare(&response)
+        let test_result = self.expect.compare(&response);
+
+        let test_result = match (test_result, self.should_fail) {
+            (TestResult::Passed, true) => TestResult::Failed(FailureReport::new(
+                "Expected failure, but test passed.",
+                MatchResult::Matches,
+            )),
+            (TestResult::Failed(_), true) => TestResult::Passed,
+            (result, _) => result,
+        };
+
+        return Ok(test_result);
+    }
+}
+
+impl SuiteVariables for Test {
+    fn populate_variables(
+        &mut self,
+        variables: &mut VariableMap,
+    ) -> Result<(), ConfigurationError> {
+        self.request.populate_variables(variables)?;
+        self.expect.populate_variables(variables)?;
+
+        Ok(())
     }
 }
 
@@ -39,7 +59,6 @@ impl Test {
 pub enum TestResult {
     Passed,
     Failed(FailureReport),
-    Error(String),
 }
 
 impl TestResult {
@@ -72,106 +91,14 @@ impl fmt::Display for FailureReport {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct RequestDefinition {
-    pub method: RequestMethod,
-    pub url: String,
-    pub headers: Option<HashMap<String, String>>,
-    pub body: Option<serde_json::Value>,
-}
-
-impl RequestDefinition {
-    pub fn build_client_request(&self, client: &reqwest::Client) -> RequestBuilder {
-        let mut request_builder = match self.method {
-            RequestMethod::Get => client.get(&self.url),
-        };
-
-        if let Some(headers) = &self.headers {
-            for (key, value) in headers {
-                request_builder = request_builder.header(key, value);
-            }
-        }
-
-        if let Some(body) = &self.body {
-            let body_json = serde_json::to_string(&body).unwrap();
-            request_builder = request_builder.body(body_json);
-        }
-
-        return request_builder;
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[serde(rename_all = "UPPERCASE")]
-pub enum RequestMethod {
-    Get,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct ResponseDefinition {
-    pub status: Option<StatusMatcher>,
-    pub headers: Option<HashMap<String, String>>,
-    pub body: Option<serde_json::Value>,
-}
-
-impl ResponseDefinition {
-    pub async fn from_response(response: reqwest::Response) -> Self {
-        let status = Some(StatusMatcher::Exact(response.status().as_u16()));
-        let header_map = response.headers().clone();
-        let headers = header_map
-            .into_iter()
-            .filter_map(|(header, value)| match header {
-                Some(header) => Some((header, value)),
-                None => None,
-            })
-            .map(|(header, value)| {
-                (
-                    header.as_str().to_string(),
-                    value.to_str().unwrap().to_string(),
-                )
-            })
-            .collect::<HashMap<String, String>>();
-
-        let headers = match headers.len() {
-            0 => None,
-            _ => Some(headers),
-        };
-
-        let body = match response.json::<serde_json::Value>().await {
-            Ok(body) => Some(body),
-            Err(_) => None,
-        };
-
-        ResponseDefinition {
-            status,
-            headers,
-            body,
-        }
-    }
-
-    pub fn compare(&self, other: &ResponseDefinition) -> TestResult {
-        match self.status.match_cmp(&other.status) {
-            MatchResult::Matches => {}
-            other => return TestResult::fail("Status does not match.", &other),
-        }
-
-        match self.headers.match_cmp(&other.headers) {
-            MatchResult::Matches => {}
-            other => return TestResult::fail("Headers do not match.", &other),
-        }
-
-        match self.body.match_cmp(&other.body) {
-            MatchResult::Matches => {}
-            other => return TestResult::fail("Body does not match.", &other),
-        }
-
-        return TestResult::Passed;
-    }
-}
-
 #[cfg(test)]
 mod test {
+
     use serde_json::json;
+
+    use crate::{
+        matcher::status_matcher::StatusMatcher, suite::response::response_headers::ResponseHeaders,
+    };
 
     use super::*;
 
@@ -183,7 +110,7 @@ mod test {
             status: None,
         };
         let response = ResponseDefinition {
-            headers: Some(HashMap::new()),
+            headers: Some(ResponseHeaders::default()),
             body: Some(json!({ "test": "test" })),
             status: Some(StatusMatcher::Exact(200)),
         };
