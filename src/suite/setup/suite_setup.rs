@@ -94,16 +94,21 @@ impl SuiteSetup {
                 std::thread::sleep(std::time::Duration::from_secs_f64(seconds));
             }
             Some(WaitInstruction::Port(port)) => {
-                cmd.spawn().map_err(|e| {
+                let addr: SocketAddr = format!("127.0.0.1:{}", &port).parse().map_err(|e| {
                     eprintln!(
-                        "Failed to spawn script instruction: {}\n{:#?}",
+                        "Failed to parse socket from port address: {}\n{:#?}",
                         &instruction.script, e
                     );
                 })?;
 
-                let addr: SocketAddr = format!("127.0.0.1:{}", &port).parse().map_err(|e| {
+                if let Ok(_) = TcpStream::connect_timeout(&addr, Duration::from_secs(1)) {
+                    // In case app is already running on this port
+                    return Ok(());
+                }
+
+                cmd.spawn().map_err(|e| {
                     eprintln!(
-                        "Failed to parse socket from port address: {}\n{:#?}",
+                        "Failed to spawn script instruction: {}\n{:#?}",
                         &instruction.script, e
                     );
                 })?;

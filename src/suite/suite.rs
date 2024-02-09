@@ -6,7 +6,7 @@ use crate::{
         report::{ReportedResult, TestResultsReport},
         setup::SuiteSetup,
     },
-    variables::VariableMap,
+    variables::{variable_map::VariableMap, SuiteVariables},
 };
 
 use super::test::Test;
@@ -18,7 +18,7 @@ pub struct Suite {
     setup: Option<SuiteSetup>,
     tests: Vec<Test>,
     #[serde(default)]
-    variable_map: VariableMap,
+    variables: VariableMap,
 }
 
 impl Suite {
@@ -37,11 +37,13 @@ impl Suite {
             setup.execute_before_all();
         }
 
+        for test in self.tests.iter_mut() {
+            test.populate_variables(&mut self.variables)
+                .expect("Error populating variables for test.");
+        }
+
         for test in &self.tests {
-            let test_execution = async move {
-
-                test.populate_variables(self.variable_map).expect("Error populating variables for test.");
-
+            let test_execution = async {
                 if let Some(setup) = &self.setup {
                     setup.execute_before_each();
                 }
@@ -94,7 +96,7 @@ mod test {
         let mut suite = serde_yaml::from_str::<Suite>(&example_suite).unwrap();
         let results_report = suite.run().await;
 
-        assert_eq!(results_report.passed, 5);
+        assert_eq!(results_report.passed, 6);
         assert_eq!(results_report.failed, 0);
     }
 }

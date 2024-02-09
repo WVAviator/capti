@@ -7,7 +7,7 @@ use surf::Suite;
 async fn main() -> Result<(), ConfigurationError> {
     let args = Args::parse();
 
-    let suite = Suite::from_file(&args.path)?;
+    let mut suite = Suite::from_file(&args.path)?;
 
     let report = suite.run().await;
 

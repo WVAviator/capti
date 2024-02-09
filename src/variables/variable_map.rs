@@ -1,10 +1,12 @@
 use std::{collections::HashMap, ops::Deref};
 
+use serde::Deserialize;
+
 use regex::Captures;
 
 use crate::errors::config_error::ConfigurationError;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, PartialEq, Default, Deserialize)]
 pub struct VariableMap(HashMap<String, String>);
 
 impl VariableMap {

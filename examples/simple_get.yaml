@@ -1,5 +1,7 @@
 suite: "Simple Get Request Tests"
 description: "This suite tests various simple get requests to the /hello endpoint"
+variables:
+  WORLD: hello
 
 setup:
   before_all:
@@ -56,3 +58,11 @@ tests:
     expect:
       body:
         message: $regex /[Hh]ello/
+
+  - test: "env variable usage"
+    description: "test a request url using env variables"
+    request:
+      method: GET
+      url: "http://localhost:3000/{WORLD}"
+    expect:
+      status: 2xx

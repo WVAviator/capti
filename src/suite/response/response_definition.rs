@@ -1,11 +1,13 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{
-    client::client::get_client,
     errors::config_error::ConfigurationError,
     matcher::{match_result::MatchResult, status_matcher::StatusMatcher, MatchCmp},
-    crate::suite::response::ResponseHeaders
+    suite::test::TestResult,
+    variables::{variable_map::VariableMap, SuiteVariables},
 };
+
+use super::response_headers::ResponseHeaders;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct ResponseDefinition {
@@ -57,12 +59,15 @@ impl ResponseDefinition {
 }
 
 impl SuiteVariables for ResponseDefinition {
-  fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), ConfigurationError> {
-    self.headers.populate_variables(variables)?;
-    self.body.populate_variables(variables)?;
+    fn populate_variables(
+        &mut self,
+        variables: &mut VariableMap,
+    ) -> Result<(), ConfigurationError> {
+        self.headers.populate_variables(variables)?;
+        self.body.populate_variables(variables)?;
 
-    Ok(())
-  }
+        Ok(())
+    }
 }
 
 // impl MatchCmp for ResponseDefinition {

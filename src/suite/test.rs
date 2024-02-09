@@ -1,17 +1,15 @@
-use std::{
-    collections::HashMap,
-    fmt::{self, Debug},
-};
+use std::fmt::{self, Debug};
 
 use serde::{Deserialize, Serialize};
 
 use crate::{
     client::client::get_client,
     errors::config_error::ConfigurationError,
-    matcher::{match_result::MatchResult, status_matcher::StatusMatcher, MatchCmp},
+    matcher::match_result::MatchResult,
+    variables::{variable_map::VariableMap, SuiteVariables},
 };
 
-use super::{response::ResponseDefinition, request::RequestDefinition};
+use super::{request::RequestDefinition, response::ResponseDefinition};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Test {
@@ -48,7 +46,10 @@ impl Test {
 }
 
 impl SuiteVariables for Test {
-    fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), ConfigurationError> {
+    fn populate_variables(
+        &mut self,
+        variables: &mut VariableMap,
+    ) -> Result<(), ConfigurationError> {
         self.request.populate_variables(variables)?;
         self.expect.populate_variables(variables)?;
 
@@ -94,7 +95,12 @@ impl fmt::Display for FailureReport {
 
 #[cfg(test)]
 mod test {
+
     use serde_json::json;
+
+    use crate::{
+        matcher::status_matcher::StatusMatcher, suite::response::response_headers::ResponseHeaders,
+    };
 
     use super::*;
 
@@ -106,7 +112,7 @@ mod test {
             status: None,
         };
         let response = ResponseDefinition {
-            headers: Some(HashMap::new()),
+            headers: Some(ResponseHeaders::default()),
             body: Some(json!({ "test": "test" })),
             status: Some(StatusMatcher::Exact(200)),
         };
