@@ -38,6 +38,9 @@ tests:
         id: $exists
         email: ${USER_EMAIL}
         displayName: john-smith
+    extract:
+      body:
+        id: ${USER_ID}
 
   - test: "Access protected route"
     description: "Now signed up user should be able to access protected route"
@@ -82,7 +85,7 @@ tests:
     expect:
       status: 2xx
       body:
-        id: $exists
+        id: ${USER_ID}
         email: ${USER_EMAIL}
         displayName: john-smith
 
