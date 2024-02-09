@@ -1,0 +1,22 @@
+suite: "User Signup"
+description: "Confirms that protected routes cannot be accessed until the user signs up."
+variables:
+  BASE_URL: "http://localhost:3000"
+setup:
+  before_all:
+    - description: "Start db and server"
+      script: "npm run compose"
+      wait_until: output "Listening on 3000"
+
+tests:
+  - test: "Protected route"
+    description: "Attempting to access protected route without signin or signup"
+    request:
+      method: GET
+      url: "{BASE_URL}/recipes"
+      headers:
+        Content-Type: application/json
+    expect:
+      status: 4xx
+
+
