@@ -3,7 +3,7 @@ use std::fmt::{self, Debug};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    client::client::get_client,
+    client::Client,
     errors::config_error::ConfigurationError,
     matcher::match_result::MatchResult,
     variables::{variable_map::VariableMap, SuiteVariables},
@@ -22,9 +22,7 @@ pub struct Test {
 }
 
 impl Test {
-    pub async fn execute(&self) -> Result<TestResult, ConfigurationError> {
-        let client = get_client();
-
+    pub async fn execute(&self, client: &Client) -> Result<TestResult, ConfigurationError> {
         let request = self.request.build_client_request(&client)?;
         let response = request.send().await?;
 

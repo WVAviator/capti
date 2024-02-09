@@ -10,6 +10,7 @@ pub enum WaitInstruction {
     Finished,
     Seconds(f64),
     Port(u64),
+    Stdout(String),
 }
 
 impl<'de> Deserialize<'de> for WaitInstruction {
@@ -47,6 +48,12 @@ impl<'de> Visitor<'de> for WaitInstructionVisitor {
 
                 Ok(WaitInstruction::Port(port))
             }
+            s if s.starts_with("output") => {
+                let output = s.split(" ").skip(1).collect::<Vec<&str>>().join(" ");
+                let output = output.trim_matches(|c| c == '\'' || c == '"').to_string();
+
+                Ok(WaitInstruction::Stdout(output))
+            }
             s if s.ends_with("seconds") => {
                 let seconds = s
                     .split(" ")
@@ -76,4 +83,3 @@ impl<'de> Visitor<'de> for WaitInstructionVisitor {
         Ok(WaitInstruction::Seconds(value as f64))
     }
 }
-

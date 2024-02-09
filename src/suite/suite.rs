@@ -1,6 +1,7 @@
 use serde::Deserialize;
 
 use crate::{
+    client::Client,
     errors::config_error::ConfigurationError,
     suite::{
         report::{ReportedResult, TestResultsReport},
@@ -15,10 +16,14 @@ use super::test::Test;
 pub struct Suite {
     suite: String,
     description: Option<String>,
+    #[serde(default)]
+    parallel: bool,
     setup: Option<SuiteSetup>,
     tests: Vec<Test>,
     #[serde(default)]
     variables: VariableMap,
+    #[serde(skip)]
+    client: Client,
 }
 
 impl Suite {
@@ -34,7 +39,7 @@ impl Suite {
         println!("Running {} tests...", self.tests.len());
 
         if let Some(setup) = &self.setup {
-            setup.execute_before_all();
+            setup.execute_before_all().await;
         }
 
         for test in self.tests.iter_mut() {
@@ -45,14 +50,14 @@ impl Suite {
         for test in &self.tests {
             let test_execution = async {
                 if let Some(setup) = &self.setup {
-                    setup.execute_before_each();
+                    setup.execute_before_each().await;
                 }
 
-                let result = test.execute().await;
+                let result = test.execute(&self.client).await;
                 let reported_result = ReportedResult::new(test, result);
 
                 if let Some(setup) = &self.setup {
-                    setup.execute_after_each();
+                    setup.execute_after_each().await;
                 }
 
                 return reported_result;
@@ -60,11 +65,21 @@ impl Suite {
             results.push(test_execution);
         }
 
-        let results = futures::future::join_all(results).await;
+        let results = match &self.parallel {
+            true => futures::future::join_all(results).await,
+            false => {
+                let mut executed_results = vec![];
+                for result in results {
+                    executed_results.push(result.await);
+                }
+                executed_results
+            }
+        };
+
         let report = TestResultsReport::new(results);
 
         if let Some(setup) = &self.setup {
-            setup.execute_after_all();
+            setup.execute_after_all().await;
         }
 
         println!("{}", report);
