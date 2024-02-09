@@ -23,6 +23,10 @@ impl RequestDefinition {
     ) -> Result<RequestBuilder, ConfigurationError> {
         let mut request_builder = match self.method {
             RequestMethod::Get => client.get(&self.url),
+            RequestMethod::Post => client.post(&self.url),
+            RequestMethod::Patch => client.patch(&self.url),
+            RequestMethod::Put => client.put(&self.url),
+            RequestMethod::Delete => client.delete(&self.url),
         };
 
         if let Some(headers) = &self.headers {

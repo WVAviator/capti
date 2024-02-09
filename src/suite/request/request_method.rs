@@ -4,4 +4,8 @@ use serde::{Deserialize, Serialize};
 #[serde(rename_all = "UPPERCASE")]
 pub enum RequestMethod {
     Get,
+    Post,
+    Patch,
+    Put,
+    Delete,
 }
