@@ -101,6 +101,53 @@ export const signup = async (
   }
 };
 
+export const deleteAccount = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  const { userId } = req.session;
+
+  if (!userId) {
+    return next({
+      log: "Attempted use of endpoint without authentication",
+      message: "Not authorized",
+      status: 401,
+    });
+  }
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return next({
+        log: "Attempted use of endpoint without authentication",
+        message: "Not authorized",
+        status: 401,
+      });
+    }
+
+    User.deleteOne({ _id: userId }, (err) => {
+      if (err) {
+        return next({
+          log: `Error deleting user: ${err}`,
+          message: "Server Error",
+          status: 500,
+        });
+      }
+    });
+
+    req.session.userId = undefined;
+    next();
+  } catch (error) {
+    return next({
+      log: `Error connecting to db: ${error}`,
+      message: "Server Error",
+      status: 500,
+    });
+  }
+};
+
 /**
  * This middleware function closes the gap between OAuth and traditional login. If the user is not using OAuth, the the req.user will be undefined. The req.user will then be populated with the user's information by using the userID property on req.session. If there is no req.session.userID or there is not matching user in the database, this function will not error. It will simply call next() and allow the request to continue. Use this middleware with each request before using any other middleware that accesses user data on the req.user property.
  * @param req

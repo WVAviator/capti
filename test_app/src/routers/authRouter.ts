@@ -3,6 +3,7 @@ import {
   authenticateUser,
   signin,
   signup,
+  deleteAccount,
 } from "../controllers/authController";
 
 const router = Router();
@@ -27,5 +28,14 @@ router.post("/signout", authenticateUser, (req: Request, res: Response) => {
   req.session.userId = undefined;
   res.status(200).send();
 });
+
+router.delete(
+  "/user",
+  authenticateUser,
+  deleteAccount,
+  (req: Request, res: Response) => {
+    res.status(200).send();
+  },
+);
 
 export default router;

@@ -2,6 +2,8 @@ suite: "User Signup"
 description: "Confirms that protected routes cannot be accessed until the user signs up."
 variables:
   BASE_URL: "http://localhost:3000"
+  USER_EMAIL: "testuser@test.com"
+  USER_PASSWORD: "F7%df12UU9lk"
 setup:
   before_all:
     - description: "Start db and server"
@@ -13,10 +15,116 @@ tests:
     description: "Attempting to access protected route without signin or signup"
     request:
       method: GET
-      url: "{BASE_URL}/recipes"
+      url: "${BASE_URL}/recipes"
       headers:
         Content-Type: application/json
     expect:
       status: 4xx
 
+  - test: "Sign up"
+    description: "Signing up as a new user for the site"
+    request:
+      method: POST
+      url: "${BASE_URL}/auth/signup"
+      headers:
+        Content-Type: application/json
+      body:
+        email: ${USER_EMAIL}
+        displayName: john-smith
+        password: ${USER_PASSWORD}
+    expect:
+      status: 2xx
+      body:
+        id: $exists
+        email: ${USER_EMAIL}
+        displayName: john-smith
 
+  - test: "Access protected route"
+    description: "Now signed up user should be able to access protected route"
+    request:
+      method: GET
+      url: "${BASE_URL}/recipes"
+      headers:
+        Content-Type: application/json
+    expect:
+      status: 2xx
+
+  - test: "Sign out"
+    description: "The new user should be able to sign out"
+    request:
+      method: POST
+      url: "${BASE_URL}/auth/signout"
+      headers:
+        Content-Type: application/json
+    expect:
+      status: 2xx
+
+  - test: "No access after signout"
+    description: "After signing out, the user should not be able to access protected routes"
+    request:
+      method: GET
+      url: "${BASE_URL}/recipes"
+      headers:
+        Content-Type: application/json
+    expect:
+      status: 4xx
+
+  - test: "Sign in"
+    description: "The user should be able to sign back in with email and password"
+    request:
+      method: POST
+      url: "${BASE_URL}/auth/signin"
+      headers:
+        Content-Type: application/json
+      body:
+        email: ${USER_EMAIL}
+        password: ${USER_PASSWORD}
+    expect:
+      status: 2xx
+      body:
+        id: $exists
+        email: ${USER_EMAIL}
+        displayName: john-smith
+
+  - test: "Access restored"
+    description: "After signing back in, access should be restored"
+    request:
+      method: GET
+      url: "${BASE_URL}/recipes"
+      headers:
+        Content-Type: application/json
+    expect:
+      status: 2xx
+
+  - test: "Delete user"
+    description: "User should be able to delete their own account"
+    request:
+      method: DELETE
+      url: "${BASE_URL}/auth/user"
+      headers:
+        Content-Type: application/json
+    expect:
+      status: 2xx
+
+  - test: "No access after account deletion"
+    description: "After deleting their account, they should not be able to access protected routes anymore"
+    request:
+      method: GET
+      url: "${BASE_URL}/recipes"
+      headers:
+        Content-Type: application/json
+    expect:
+      status: 4xx
+
+  - test: "No sign in after account deletion"
+    description: "The user should not be able to sign back in after deleting their account"
+    request:
+      method: POST
+      url: "${BASE_URL}/auth/signin"
+      headers:
+        Content-Type: application/json
+      body:
+        email: ${USER_EMAIL}
+        password: ${USER_PASSWORD}
+    expect:
+      status: 4xx
