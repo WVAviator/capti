@@ -4,7 +4,7 @@ use colored::Colorize;
 
 use crate::errors::config_error::ConfigurationError;
 
-use super::test::{Test, TestResult};
+use super::test::{TestDefinition, TestResult};
 
 pub struct TestResultsReport {
     pub total_tests: usize,
@@ -15,12 +15,12 @@ pub struct TestResultsReport {
 }
 
 pub struct ReportedResult {
-    pub test: Test,
+    pub test: TestDefinition,
     pub result: Result<TestResult, ConfigurationError>,
 }
 
 impl ReportedResult {
-    pub fn new(test: &Test, result: Result<TestResult, ConfigurationError>) -> Self {
+    pub fn new(test: &TestDefinition, result: Result<TestResult, ConfigurationError>) -> Self {
         ReportedResult {
             test: test.clone(),
             result,

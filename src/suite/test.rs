@@ -12,7 +12,7 @@ use crate::{
 use super::{extract::ResponseExtractor, request::RequestDefinition, response::ResponseDefinition};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct Test {
+pub struct TestDefinition {
     pub test: String,
     pub description: Option<String>,
     #[serde(default)]
@@ -22,7 +22,7 @@ pub struct Test {
     pub extract: Option<ResponseExtractor>,
 }
 
-impl Test {
+impl TestDefinition {
     pub async fn execute(
         &self,
         client: &Client,
@@ -56,7 +56,7 @@ impl Test {
     }
 }
 
-impl SuiteVariables for Test {
+impl SuiteVariables for TestDefinition {
     fn populate_variables(
         &mut self,
         variables: &mut VariableMap,

@@ -10,7 +10,7 @@ use crate::{
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
-use super::test::Test;
+use super::test::TestDefinition;
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct Suite {
@@ -19,7 +19,7 @@ pub struct Suite {
     #[serde(default)]
     parallel: bool,
     setup: Option<SuiteSetup>,
-    tests: Vec<Test>,
+    tests: Vec<TestDefinition>,
     #[serde(default)]
     variables: VariableMap,
     #[serde(skip)]
@@ -31,6 +31,10 @@ impl Suite {
         let suite = std::fs::read_to_string(path)?;
         let suite = serde_yaml::from_str::<Suite>(&suite)?;
         return Ok(suite);
+    }
+
+    pub fn get_test_count(&self) -> usize {
+        return self.tests.len();
     }
 
     pub async fn run(&mut self) -> TestResultsReport {
