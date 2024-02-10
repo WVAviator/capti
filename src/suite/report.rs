@@ -7,6 +7,7 @@ use crate::errors::config_error::ConfigurationError;
 use super::test::{TestDefinition, TestResult};
 
 pub struct TestResultsReport {
+    pub suite: String,
     pub total_tests: usize,
     pub passed: usize,
     pub failed: usize,
@@ -31,17 +32,21 @@ impl ReportedResult {
 impl fmt::Display for ReportedResult {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.result {
-            Ok(TestResult::Passed) => write!(f, "{}... {}", self.test.test, "[OK]".green()),
-            Ok(TestResult::Failed(_)) => write!(f, "{}... {}", self.test.test, "[FAILED]".red()),
-            Err(e) => {
-                write!(f, "{}... {}\n{:#?}", self.test.test, "[ERROR]".red(), e)
+            Ok(TestResult::Passed) => {
+                write!(f, "{} {}", "✓".green(), self.test.test,)
+            }
+            Ok(TestResult::Failed(_)) => {
+                write!(f, "{} {}", "✗".red(), self.test.test,)
+            }
+            Err(_) => {
+                write!(f, "{} {}", "⚠".yellow(), self.test.test,)
             }
         }
     }
 }
 
 impl TestResultsReport {
-    pub fn new(tests: Vec<ReportedResult>) -> Self {
+    pub fn new(suite: impl Into<String>, tests: Vec<ReportedResult>) -> Self {
         let total_tests = tests.len();
 
         let (passed, failed, errors) =
@@ -54,6 +59,7 @@ impl TestResultsReport {
                 });
 
         TestResultsReport {
+            suite: suite.into(),
             total_tests,
             passed,
             failed,
@@ -65,24 +71,41 @@ impl TestResultsReport {
 
 impl fmt::Display for TestResultsReport {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for result in &self.results {
-            if let Ok(TestResult::Failed(failure)) = &result.result {
-                writeln!(f, "{}", failure)?;
-            }
-        }
-
-        writeln!(f, "")?;
+        writeln!(f, " ")?;
+        writeln!(f, "== {} =======", self.suite)?;
+        writeln!(f, " ")?;
 
         for result in &self.results {
             writeln!(f, "{}", result)?;
         }
 
-        writeln!(f, "")?;
+        writeln!(f, " ")?;
+
+        let passed = {
+            match self.passed {
+                0 => String::from("0").normal(),
+                _ => self.passed.to_string().green(),
+            }
+        };
+
+        let failed = {
+            match self.failed {
+                0 => String::from("0").normal(),
+                _ => self.failed.to_string().red(),
+            }
+        };
+
+        let errors = {
+            match self.errors {
+                0 => String::from("0").normal(),
+                _ => self.errors.to_string().yellow(),
+            }
+        };
 
         write!(
             f,
-            "Summary:\nPassed: {} | Failed: {} | Errors: {} | Total: {}",
-            self.passed, self.failed, self.errors, self.total_tests
+            "Passed: {} | Failed: {} | Errors: {} ▐  Total: {}",
+            passed, failed, errors, self.total_tests
         )?;
         Ok(())
     }

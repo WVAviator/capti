@@ -3,10 +3,7 @@ use serde::Deserialize;
 use crate::{
     client::Client,
     errors::config_error::ConfigurationError,
-    suite::{
-        report::{ReportedResult, TestResultsReport},
-        setup::SuiteSetup,
-    },
+    suite::{report::TestResultsReport, setup::SuiteSetup},
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
@@ -38,8 +35,6 @@ impl Suite {
     }
 
     pub async fn run(&mut self) -> TestResultsReport {
-        println!("Running {} tests...", self.tests.len());
-
         if let Some(setup) = &self.setup {
             setup.execute_before_all().await;
         }
@@ -59,8 +54,7 @@ impl Suite {
                             setup.execute_before_each().await;
                         }
 
-                        let result = test.execute(&self.client, None).await;
-                        let reported_result = ReportedResult::new(test, result);
+                        let reported_result = test.execute(&self.client, &self.suite, None).await;
 
                         if let Some(setup) = &self.setup {
                             setup.execute_after_each().await;
@@ -82,8 +76,9 @@ impl Suite {
                     if let Some(setup) = &self.setup {
                         setup.execute_before_each().await;
                     }
-                    let result = test.execute(&self.client, Some(&mut self.variables)).await;
-                    let reported_result = ReportedResult::new(test, result);
+                    let reported_result = test
+                        .execute(&self.client, &self.suite, Some(&mut self.variables))
+                        .await;
 
                     if let Some(setup) = &self.setup {
                         setup.execute_after_each().await;
@@ -95,7 +90,7 @@ impl Suite {
             }
         };
 
-        let report = TestResultsReport::new(results);
+        let report = TestResultsReport::new(&self.suite, results);
 
         if let Some(setup) = &self.setup {
             setup.execute_after_all().await;

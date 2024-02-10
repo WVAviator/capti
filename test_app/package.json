@@ -5,7 +5,7 @@
   "scripts": {
     "start": "ts-node src/index.ts",
     "compose": "docker compose down && docker compose up --build",
-    "test": "./../target/debug/surf ./tests/user_signup.yaml"
+    "test": "./../target/debug/surf ./tests"
   },
   "author": "",
   "license": "ISC",

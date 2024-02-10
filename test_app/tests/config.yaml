@@ -1,0 +1,11 @@
+
+setup:
+  before_all:
+    - description: "Start db and server"
+      wait_until: output "Listening on 3000"
+      script: >
+        if ! docker-compose ps | grep -q " Up "; then
+            docker-compose up
+        else
+            echo "Listening on 3000"
+        fi

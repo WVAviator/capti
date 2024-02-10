@@ -12,7 +12,10 @@ use crate::{
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
-use super::{extract::ResponseExtractor, request::RequestDefinition, response::ResponseDefinition};
+use super::{
+    extract::ResponseExtractor, report::ReportedResult, request::RequestDefinition,
+    response::ResponseDefinition,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TestDefinition {
@@ -29,26 +32,29 @@ impl TestDefinition {
     pub async fn execute(
         &self,
         client: &Client,
+        suite: &str,
+        variables: Option<&mut VariableMap>,
+    ) -> ReportedResult {
+        let spinner = Spinner::start(format!("[{}] {}", &suite, &self.test)).await;
+
+        let test_result = self.process(client, variables).await;
+        let reported_result = ReportedResult::new(self, test_result);
+
+        spinner.finish_test(&reported_result);
+
+        return reported_result;
+    }
+
+    async fn process(
+        &self,
+        client: &Client,
         variables: Option<&mut VariableMap>,
     ) -> Result<TestResult, ConfigurationError> {
-        let spinner = Spinner::start(&self.test);
-
-        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-
         let request = self.request.build_client_request(&client)?;
         let response = request.send().await?;
-
         let response = ResponseDefinition::from_response(response).await;
 
         let test_result = self.expect.compare(&response);
-
-        if let Some(extractor) = &self.extract {
-            if let Some(variables) = variables {
-                extractor.extract(&response, variables).await?;
-            } else {
-                return Err(ConfigurationError::parallel_error("Cannot extract variables from tests running in parallel. Try setting the suite to 'parallel: false'"));
-            }
-        }
 
         let test_result = match (test_result, self.should_fail) {
             (TestResult::Passed, true) => TestResult::Failed(FailureReport::new(
@@ -59,9 +65,20 @@ impl TestDefinition {
             (result, _) => result,
         };
 
-        spinner.finish(&test_result).await;
+        // Skip extraction if the test failed
+        if let TestResult::Failed(_) = test_result {
+            return Ok(test_result);
+        }
 
-        return Ok(test_result);
+        if let Some(extractor) = &self.extract {
+            if let Some(variables) = variables {
+                extractor.extract(&response, variables).await?;
+            } else {
+                return Err(ConfigurationError::parallel_error("Cannot extract variables from tests running in parallel. Try setting the suite to 'parallel: false'"));
+            }
+        }
+
+        Ok(test_result)
     }
 }
 

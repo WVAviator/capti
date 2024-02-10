@@ -1,17 +1,25 @@
+use std::time::Duration;
+
+use colored::Colorize;
 use indicatif::{ProgressBar, ProgressStyle};
-use tokio::{sync::oneshot, time::Duration};
+
+use crate::{
+    progress_println,
+    suite::{report::ReportedResult, test::TestResult},
+};
+
+use super::multiprogress::multiprogress;
 
 pub struct Spinner {
-    handle: tokio::task::JoinHandle<()>,
-    finish_signal: oneshot::Sender<String>,
+    spinner: ProgressBar,
+    text: String,
 }
 
 impl Spinner {
-    pub fn start(text: impl Into<String>) -> Self {
+    pub async fn start(text: impl Into<String>) -> Self {
         let text = text.into();
 
-        let load_template = format!("{{spinner}} {}", text);
-        let finish_template = format!("{{msg}} {}", text);
+        let load_template = format!("{{spinner}} {}...", text);
 
         let spinner = ProgressBar::new_spinner();
         spinner.set_style(
@@ -19,33 +27,74 @@ impl Spinner {
                 .template(load_template.as_str())
                 .expect("Invalid template for spinner."),
         );
+        spinner.enable_steady_tick(Duration::from_millis(100));
 
-        let (tx, mut rx) = oneshot::channel();
+        let multiprogress = multiprogress()
+            .lock()
+            .expect("Failed to lock multiprogress.");
+        let spinner = multiprogress.add(spinner);
 
-        let handle = tokio::task::spawn(async move {
-            loop {
-                spinner.tick();
-                tokio::time::sleep(Duration::from_millis(100)).await;
-                if let Ok(message) = rx.try_recv() {
-                    spinner.set_style(
-                        ProgressStyle::default_spinner()
-                            .template(finish_template.as_str())
-                            .expect("Invalid template for spinner."),
-                    );
-                    spinner.finish_with_message(message);
-                    break;
-                }
+        Spinner { spinner, text }
+    }
+
+    pub fn finish_test(self, reported_result: &ReportedResult) {
+        let finish_template = match &reported_result.result {
+            Ok(TestResult::Passed) => {
+                format!("{} {}... {}", "✓".green(), self.text, "[OK]".green())
             }
-        });
+            Ok(TestResult::Failed(_)) => {
+                format!("{} {}... {}", "✗".red(), self.text, "[FAILED]".red())
+            }
+            Err(_) => format!("{} {}... {}", "⚠".yellow(), self.text, "[ERROR]".yellow()),
+        };
 
-        Spinner {
-            handle,
-            finish_signal: tx,
+        self.spinner.set_style(
+            ProgressStyle::default_spinner()
+                .template(finish_template.as_str())
+                .expect("Invalid template for spinner."),
+        );
+
+        self.spinner.finish();
+
+        {
+            let multiprogress = multiprogress()
+                .lock()
+                .expect("Failed to lock multiprogress.");
+            multiprogress.remove(&self.spinner);
+            multiprogress
+                .println(format!("{}", finish_template))
+                .expect("Unable to print line after multiprogress.");
+        }
+
+        match &reported_result.result {
+            Ok(TestResult::Passed) => {}
+            Ok(TestResult::Failed(failure_report)) => {
+                progress_println!("{}", failure_report);
+                progress_println!(" ");
+            }
+            Err(e) => {
+                progress_println!("{}", e);
+                progress_println!(" ");
+            }
         }
     }
 
-    pub async fn finish(self, message: impl Into<String>) {
-        let _ = self.finish_signal.send(message.into());
-        if let Err(_) = self.handle.await {}
+    pub fn finish(self, message: impl Into<String>) {
+        let finish_template = format!("✔︎ {}... {}", self.text, message.into());
+        self.spinner.set_style(
+            ProgressStyle::default_spinner()
+                .template(finish_template.as_str())
+                .expect("Invalid template for spinner."),
+        );
+
+        self.spinner.finish();
+
+        let multiprogress = multiprogress()
+            .lock()
+            .expect("Failed to lock multiprogress.");
+        multiprogress.remove(&self.spinner);
+        multiprogress
+            .println(format!("{}", finish_template))
+            .expect("Unable to print line after multiprogress.");
     }
 }

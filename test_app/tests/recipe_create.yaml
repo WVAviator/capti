@@ -1,0 +1,115 @@
+suite: "Create Recipe"
+description: "This suite involves creating a new recipe and fetching its information."
+variables:
+  BASE_URL: http://localhost:3000
+  USER_EMAIL: recipe@testuser.com
+  USER_PASSWORD: hG98s4%%phG
+
+tests:
+  - test: Create new user
+    request:
+      method: POST
+      url: ${BASE_URL}/auth/signup
+      headers:
+        Content-Type: application/json
+      body:
+        email: ${USER_EMAIL}
+        displayName: john-smith
+        password: ${USER_PASSWORD}
+    expect:
+      status: 2xx
+      body:
+        id: $exists
+        email: ${USER_EMAIL}
+        displayName: john-smith
+    extract:
+      body:
+        id: ${USER_ID}
+
+  - test: New recipe fails missing required fields
+    description: "If required fields are missing, the request fails."
+    request:
+      method: POST
+      url: ${BASE_URL}/recipes
+      headers:
+        Content-Type: application/json
+      body:
+        name: Guacamole
+    expect:
+      status: 400
+
+  - test: Create new recipe
+    description: Create a new recipe
+    request:
+      method: POST
+      url: ${BASE_URL}/recipes
+      headers:
+        Content-Type: application/json
+      body:
+        name: Guacamole
+        description: >
+          A delicious classic guacamole recipe.
+        time: 10
+        servings: 6
+        ingredients:
+          - 3 avocados
+          - 1/2 red onion
+          - 1 lime
+          - 1 green bell pepper
+          - 1 jalapeno pepper
+          - 1/2 tsp cumin
+          - 1/2 tsp salt
+          - 1/2 tsp red pepper
+        instructions: [
+          "Roughly chop onion, green pepper, and jalapeno and add to food processor. Pulse 2-3 times.",
+          "Cut and remove seeds from avocados, use spoon to scoop and mash in a bowl.",
+          "Mix in the vegetables, seasonings, and lime juice squeezed from a fresh lime." ]
+    expect:
+      status: 2xx
+      body:
+        id: $exists
+        userId: ${USER_ID}
+        name: Guacamole
+    extract:
+      body:
+        id: ${RECIPE_ID}
+
+  - test: Get recipe
+    description: "Should be able to get recipe information"
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes/${RECIPE_ID}
+    expect:
+      status: 2xx
+      body:
+        id: ${RECIPE_ID}
+        name: Guacamole
+
+  - test: Delete recipe
+    description: "Deletes the new recipe"
+    request:
+      method: DELETE
+      url: ${BASE_URL}/recipes/${RECIPE_ID}
+    expect:
+      status: 2xx
+
+  - test: Recipe is gone
+    description: "The recipe is really gone after deletion"
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes/${RECIPE_ID}
+    expect:
+      status: 404
+
+  - test: Delete user
+    request:
+      method: DELETE
+      url: ${BASE_URL}/auth/user
+    expect:
+      status: 2xx
+
+
+
+
+
+
