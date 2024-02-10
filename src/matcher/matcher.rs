@@ -1,9 +1,12 @@
 use regex::Regex;
 
+use super::{MatchCmp, MatchResult};
+
 pub enum Matcher {
     Exact(String),
     Exists,
     Regex(Regex),
+    Includes(serde_json::Value),
 }
 
 impl Matcher {
@@ -18,7 +21,47 @@ impl Matcher {
                 serde_json::Value::String(s) => regex.is_match(s),
                 _ => false,
             },
+            Matcher::Includes(expected) => match value {
+                serde_json::Value::Array(arr) => arr.iter().any(|v| match expected.match_cmp(&v) {
+                    MatchResult::Matches => true,
+                    _ => false,
+                }),
+                _ => false,
+            },
         }
+    }
+}
+
+impl From<&str> for Matcher {
+    fn from(value: &str) -> Self {
+        match value {
+            s if s.starts_with("\\$") => Matcher::Exact(s[1..].to_string()),
+            "$exists" => Matcher::Exists,
+            s if s.starts_with("$regex") => match extract_regex(s) {
+                Some(regex) => Matcher::Regex(regex),
+                None => Matcher::Exact(s.to_string()),
+            },
+            s if s.starts_with("$includes") => {
+                let value = serde_json::from_str(&s[10..]);
+                match value {
+                    Ok(value) => Matcher::Includes(value),
+                    Err(_) => Matcher::Includes(serde_json::Value::String(s[10..].to_string())),
+                }
+            }
+            _ => Matcher::Exact(value.to_string()),
+        }
+    }
+}
+
+impl From<&String> for Matcher {
+    fn from(value: &String) -> Self {
+        Matcher::from(value.as_str())
+    }
+}
+
+impl From<String> for Matcher {
+    fn from(value: String) -> Self {
+        Matcher::from(value.as_str())
     }
 }
 
@@ -37,32 +80,6 @@ fn extract_regex(s: &str) -> Option<Regex> {
     let regex_statement = regex_str.into_iter().collect::<String>();
 
     Regex::new(&regex_statement).ok()
-}
-
-impl From<&str> for Matcher {
-    fn from(value: &str) -> Self {
-        match value {
-            s if s.starts_with("\\$") => Matcher::Exact(s[1..].to_string()),
-            "$exists" => Matcher::Exists,
-            s if s.starts_with("$regex") => match extract_regex(s) {
-                Some(regex) => Matcher::Regex(regex),
-                None => Matcher::Exact(s.to_string()),
-            },
-            _ => Matcher::Exact(value.to_string()),
-        }
-    }
-}
-
-impl From<&String> for Matcher {
-    fn from(value: &String) -> Self {
-        Matcher::from(value.as_str())
-    }
-}
-
-impl From<String> for Matcher {
-    fn from(value: String) -> Self {
-        Matcher::from(value.as_str())
-    }
 }
 
 #[cfg(test)]

@@ -1,18 +1,24 @@
 use std::fmt::{self, Debug};
 
+use colored::Colorize;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
     client::Client,
     errors::config_error::ConfigurationError,
     matcher::match_result::MatchResult,
+    progress::Spinner,
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
-use super::{extract::ResponseExtractor, request::RequestDefinition, response::ResponseDefinition};
+use super::{
+    extract::ResponseExtractor, report::ReportedResult, request::RequestDefinition,
+    response::ResponseDefinition,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct Test {
+pub struct TestDefinition {
     pub test: String,
     pub description: Option<String>,
     #[serde(default)]
@@ -22,26 +28,33 @@ pub struct Test {
     pub extract: Option<ResponseExtractor>,
 }
 
-impl Test {
+impl TestDefinition {
     pub async fn execute(
+        &self,
+        client: &Client,
+        suite: &str,
+        variables: Option<&mut VariableMap>,
+    ) -> ReportedResult {
+        let spinner = Spinner::start(format!("[{}] {}", &suite, &self.test)).await;
+
+        let test_result = self.process(client, variables).await;
+        let reported_result = ReportedResult::new(self, test_result);
+
+        spinner.finish_test(&reported_result);
+
+        return reported_result;
+    }
+
+    async fn process(
         &self,
         client: &Client,
         variables: Option<&mut VariableMap>,
     ) -> Result<TestResult, ConfigurationError> {
         let request = self.request.build_client_request(&client)?;
         let response = request.send().await?;
-
         let response = ResponseDefinition::from_response(response).await;
 
         let test_result = self.expect.compare(&response);
-
-        if let Some(extractor) = &self.extract {
-            if let Some(variables) = variables {
-                extractor.extract(&response, variables).await?;
-            } else {
-                return Err(ConfigurationError::parallel_error("Cannot extract variables from tests running in parallel. Try setting the suite to 'parallel: false'"));
-            }
-        }
 
         let test_result = match (test_result, self.should_fail) {
             (TestResult::Passed, true) => TestResult::Failed(FailureReport::new(
@@ -52,11 +65,24 @@ impl Test {
             (result, _) => result,
         };
 
-        return Ok(test_result);
+        // Skip extraction if the test failed
+        if let TestResult::Failed(_) = test_result {
+            return Ok(test_result);
+        }
+
+        if let Some(extractor) = &self.extract {
+            if let Some(variables) = variables {
+                extractor.extract(&response, variables).await?;
+            } else {
+                return Err(ConfigurationError::parallel_error("Cannot extract variables from tests running in parallel. Try setting the suite to 'parallel: false'"));
+            }
+        }
+
+        Ok(test_result)
     }
 }
 
-impl SuiteVariables for Test {
+impl SuiteVariables for TestDefinition {
     fn populate_variables(
         &mut self,
         variables: &mut VariableMap,
@@ -77,6 +103,21 @@ pub enum TestResult {
 impl TestResult {
     pub fn fail(message: impl Into<String>, match_result: &MatchResult) -> Self {
         TestResult::Failed(FailureReport::new(message, match_result.clone()))
+    }
+}
+
+impl fmt::Display for TestResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TestResult::Passed => write!(f, "{}", "[OK]".green()),
+            TestResult::Failed(_) => write!(f, "{}", "[FAILED]".red()),
+        }
+    }
+}
+
+impl Into<String> for &TestResult {
+    fn into(self) -> String {
+        format!("{}", self)
     }
 }
 

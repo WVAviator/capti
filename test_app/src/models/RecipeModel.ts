@@ -44,13 +44,9 @@ const recipeSchema = new mongoose.Schema<RecipeAttrs>(
       type: [String],
       required: true,
     },
-    imagePrompt: {
-      type: String,
-      required: true,
-    },
     imageUrl: {
       type: String,
-      required: true,
+      required: false,
     },
     servings: {
       type: Number,

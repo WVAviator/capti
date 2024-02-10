@@ -1,5 +1,7 @@
 use std::fmt;
 
+use colored::Colorize;
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum MatchResult {
     Matches,
@@ -30,7 +32,7 @@ impl MatchResult {
                 context,
             } => {
                 let context = match context {
-                    Some(context) => format!("{}\n    {}", context, ctx.into()),
+                    Some(context) => context,
                     None => ctx.into(),
                 };
                 MatchResult::ValueMismatch {
@@ -41,7 +43,7 @@ impl MatchResult {
             }
             MatchResult::Missing { key, context } => {
                 let context = match context {
-                    Some(context) => format!("{}\n    {}", context, ctx.into()),
+                    Some(context) => context,
                     None => ctx.into(),
                 };
                 MatchResult::Missing {
@@ -56,7 +58,7 @@ impl MatchResult {
                 context,
             } => {
                 let context = match context {
-                    Some(context) => format!("{}\n    {}", context, ctx.into()),
+                    Some(context) => context,
                     None => ctx.into(),
                 };
                 MatchResult::CollectionMismatch {
@@ -81,17 +83,22 @@ impl fmt::Display for MatchResult {
                 actual,
                 context,
             } => {
-                writeln!(f, "Response match failed.")?;
-                writeln!(f, "  Match failed at assertion:")?;
-                writeln!(f, "  [ {} == {} ]", expected, actual)?;
+                writeln!(f, "Match failed at assertion:")?;
+                writeln!(
+                    f,
+                    "  {} {} == {} {}",
+                    "[".red(),
+                    expected,
+                    actual,
+                    "]".red()
+                )?;
                 if let Some(context) = context {
                     writeln!(f, "    {}", context)?;
                 }
             }
             MatchResult::Missing { key, context } => {
-                writeln!(f, "Response match failed.")?;
-                writeln!(f, "  Match failed due to missing item.")?;
-                writeln!(f, "  Expected {}, Found None", key)?;
+                writeln!(f, "Match failed due to missing item.")?;
+                writeln!(f, "  Expected {}, Found {}", key, "None".red())?;
                 if let Some(context) = context {
                     writeln!(f, "    {}", context)?;
                 }
@@ -102,10 +109,9 @@ impl fmt::Display for MatchResult {
                 remaining,
                 context,
             } => {
-                writeln!(f, "Response match failed.")?;
-                writeln!(f, "  Array values mismatch:")?;
+                writeln!(f, "Array values mismatch:")?;
                 writeln!(f, "  Expected items: [ {} ]", expected)?;
-                writeln!(f, "  Found items: [ {} ]", actual)?;
+                writeln!(f, "  Found items: [ {} ]", actual.red())?;
                 writeln!(
                     f,
                     "  Matching unavailable for remaining {} elements.",

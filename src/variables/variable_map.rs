@@ -4,8 +4,9 @@ use serde::Deserialize;
 
 use regex::{escape, Captures, Regex};
 
-use crate::errors::config_error::ConfigurationError;
+use crate::{errors::config_error::ConfigurationError, progress_println};
 
+// Matches continuous ${words} wrapped like ${this}
 static VARIABLE_MATCHER: &str = r"\$\{(\w+)\}";
 
 #[derive(Debug, Clone, PartialEq, Default, Deserialize)]
@@ -37,7 +38,6 @@ impl VariableMap {
     }
 
     pub fn replace_variables(&mut self, value: &str) -> Result<String, ConfigurationError> {
-        // Matches continuous ${words} wrapped like ${this}
         let var_regex = Regex::new(VARIABLE_MATCHER)?;
 
         let result = var_regex.replace_all(value, |captures: &Captures| {
@@ -76,7 +76,7 @@ impl VariableMap {
         if let Some(caps) = full_regex.captures(actual) {
             for name in full_regex.capture_names().flatten() {
                 if let Some(value) = caps.name(name).map(|m| m.as_str().to_string()) {
-                    println!("Extracted variable {}: {}", name, value);
+                    progress_println!("Extracted variable {}: {}", name, value);
                     self.insert(name.to_string(), value);
                 }
             }

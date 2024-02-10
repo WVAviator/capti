@@ -7,6 +7,8 @@ use std::{
 
 use serde::Deserialize;
 
+use crate::{progress::Spinner, progress_println};
+
 use super::wait_instruction::WaitInstruction;
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
@@ -59,11 +61,17 @@ impl SuiteSetup {
 
     async fn execute_instructions(instructions: &Vec<SetupInstruction>) -> Result<(), ()> {
         for setup_instruction in instructions {
-            if let Some(description) = setup_instruction.description.as_ref() {
-                println!("{}", description);
-            }
+            let progress_str = match setup_instruction.description.as_ref() {
+                Some(description) => description,
+                None => "Setup script",
+            };
+
+            let spinner = Spinner::start(progress_str).await;
 
             SuiteSetup::execute_single_instruction(setup_instruction).await?;
+
+            spinner.finish("Done.");
+            progress_println!(" ");
         }
 
         Ok(())
@@ -100,13 +108,19 @@ impl SuiteSetup {
                 })??;
             }
             Some(WaitInstruction::Stdout(output)) => {
-                let mut process = cmd.stdout(Stdio::piped()).spawn().map_err(|e| {
-                    eprintln!(
-                        "Failed to spawn script instruction: {}\n{:#?}",
-                        &instruction.script, e
-                    );
-                })?;
+                let mut process = cmd
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .spawn()
+                    .map_err(|e| {
+                        eprintln!(
+                            "Failed to spawn script instruction: {}\n{:#?}",
+                            &instruction.script, e
+                        );
+                    })?;
 
+                let spinner =
+                    Spinner::start(format!("Detecting output '{}'", output.as_str())).await;
                 let output = output.clone();
 
                 tokio::task::spawn_blocking(move || {
@@ -120,10 +134,11 @@ impl SuiteSetup {
                                 script, e
                             );
                         })?;
+
+                    // process.stderr.take();
+
                     let mut reader = BufReader::new(stdout);
                     let mut line = String::new();
-
-                    println!("Waiting for output: {}", output.as_str());
 
                     loop {
                         let bytes_read = reader.read_line(&mut line).map_err(|e| {
@@ -143,6 +158,11 @@ impl SuiteSetup {
 
                         line.clear();
                     }
+
+                    if let Err(e) = process.kill() {
+                        eprintln!("Failed to kill process: {}\n{:#?}", script, e);
+                    }
+
                     Ok(()) as Result<(), ()>
                 })
                 .await
@@ -152,6 +172,8 @@ impl SuiteSetup {
                         &instruction.script, e
                     );
                 })??;
+
+                spinner.finish("Detected.");
             }
             Some(WaitInstruction::Seconds(seconds)) => {
                 cmd.spawn().map_err(|e| {
@@ -165,6 +187,8 @@ impl SuiteSetup {
             }
             Some(WaitInstruction::Port(port)) => {
                 let port = port.clone();
+
+                let spinner = Spinner::start(format!("Waiting for open port: {}", &port)).await;
 
                 tokio::task::spawn_blocking(move || {
                     let addr: SocketAddr = format!("127.0.0.1:{}", &port).parse().map_err(|e| {
@@ -183,8 +207,6 @@ impl SuiteSetup {
                         eprintln!("Failed to spawn script instruction: {}\n{:#?}", script, e);
                     })?;
 
-                    println!("Waiting for port {} to open.", &port);
-
                     loop {
                         if let Ok(_) = TcpStream::connect_timeout(&addr, Duration::from_secs(1)) {
                             break;
@@ -200,6 +222,8 @@ impl SuiteSetup {
                         &instruction.script, e
                     );
                 })??;
+
+                spinner.finish("Opened.")
             }
             None => {
                 cmd.spawn().map_err(|e| {

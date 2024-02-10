@@ -1,3 +1,5 @@
+use std::fmt;
+
 use serde::{Deserialize, Serialize};
 
 use super::{MatchCmp, MatchResult};
@@ -35,9 +37,24 @@ impl MatchCmp for StatusMatcher {
                 MatchResult::Matches
             }
             _ => MatchResult::ValueMismatch {
-                expected: format!("{:#?}", self),
-                actual: other.to_string(),
+                expected: format!("{}", self),
+                actual: format!("{}", other),
                 context: None,
+            },
+        }
+    }
+}
+
+impl fmt::Display for StatusMatcher {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            StatusMatcher::Exact(n) => write!(f, "{}", n),
+            StatusMatcher::Class(s) => match s.as_str() {
+                "2xx" => write!(f, "200-299"),
+                "3xx" => write!(f, "300-399"),
+                "4xx" => write!(f, "400-499"),
+                "5xx" => write!(f, "500-599"),
+                _ => write!(f, "Invalid status range"),
             },
         }
     }

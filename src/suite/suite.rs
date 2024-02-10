@@ -3,23 +3,20 @@ use serde::Deserialize;
 use crate::{
     client::Client,
     errors::config_error::ConfigurationError,
-    suite::{
-        report::{ReportedResult, TestResultsReport},
-        setup::SuiteSetup,
-    },
+    suite::{report::TestResultsReport, setup::SuiteSetup},
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
-use super::test::Test;
+use super::test::TestDefinition;
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct Suite {
-    suite: String,
+    pub suite: String,
     description: Option<String>,
     #[serde(default)]
     parallel: bool,
     setup: Option<SuiteSetup>,
-    tests: Vec<Test>,
+    tests: Vec<TestDefinition>,
     #[serde(default)]
     variables: VariableMap,
     #[serde(skip)]
@@ -33,9 +30,11 @@ impl Suite {
         return Ok(suite);
     }
 
-    pub async fn run(&mut self) -> TestResultsReport {
-        println!("Running {} tests...", self.tests.len());
+    pub fn get_test_count(&self) -> usize {
+        return self.tests.len();
+    }
 
+    pub async fn run(&mut self) -> TestResultsReport {
         if let Some(setup) = &self.setup {
             setup.execute_before_all().await;
         }
@@ -55,8 +54,7 @@ impl Suite {
                             setup.execute_before_each().await;
                         }
 
-                        let result = test.execute(&self.client, None).await;
-                        let reported_result = ReportedResult::new(test, result);
+                        let reported_result = test.execute(&self.client, &self.suite, None).await;
 
                         if let Some(setup) = &self.setup {
                             setup.execute_after_each().await;
@@ -78,8 +76,9 @@ impl Suite {
                     if let Some(setup) = &self.setup {
                         setup.execute_before_each().await;
                     }
-                    let result = test.execute(&self.client, Some(&mut self.variables)).await;
-                    let reported_result = ReportedResult::new(test, result);
+                    let reported_result = test
+                        .execute(&self.client, &self.suite, Some(&mut self.variables))
+                        .await;
 
                     if let Some(setup) = &self.setup {
                         setup.execute_after_each().await;
@@ -91,13 +90,12 @@ impl Suite {
             }
         };
 
-        let report = TestResultsReport::new(results);
+        let report = TestResultsReport::new(&self.suite, results);
 
         if let Some(setup) = &self.setup {
             setup.execute_after_all().await;
         }
 
-        println!("{}", report);
         return report;
     }
 }

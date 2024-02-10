@@ -1,6 +1,6 @@
-# Surf
+# Capti
 
-Surf is a lightweight end-to-end testing framework for REST APIs or for Contract Tests. 
+Capti is a lightweight end-to-end testing framework for REST APIs or for Contract Tests. 
 
 ## Basic Usage
 
@@ -48,11 +48,13 @@ tests:
 
 Anything not specified in the `expect` section of a test that is present in the actual response will be ignored. An empty `expect` will match _any_ response and the test will always pass.
 
+See [More Matchers](#-more-matchers) in the section below.
+
 Note: If you want to assert that a test should fail, you can include an optional `should_fail: true` in the test definition.
 
 ### Setup Scripts
 
-Any command, script, or program can be executed using the 'setup' functions 'before_all', 'before_each', 'after_each', and 'after_all'.
+You can define actions to take before/after your tests using the 'setup' option in a test suite. Any shell command, script, or program can be executed using the 'setup' functions 'before_all', 'before_each', 'after_each', and 'after_all'.
 
 ```yaml
 setup:
@@ -80,26 +82,55 @@ For each setup script, the `wait_until` option can be in the following formats:
 
 Omitting the `wait_until` option means the script will run concurrently in the background, and the remaining scripts or test suite will immediately continue.
 
+### Config
+
+If you need to run 'before_all' or 'after_all' setup scripts only once for an entire collection of test suites, you can define a `config.yaml` in your test directory with the same setup syntax pictured above. 
+
+Here is an example config that works with Docker Compose on Unix/Linux systems to check if the containers are already up and if not, starts them.
+
+```yaml
+setup:
+  before_all:
+    - description: "Start db and server"
+      wait_until: output "Listening on 3000"
+      script: >
+        if ! docker-compose ps | grep -q " Up "; then
+            docker-compose up
+        else
+            echo "Listening on 3000"
+        fi
+```
+
+Note: Running shell scripts before or after your tests is entirely optional - it's fine to start your server manually and then run Capti, just understand that if your server is not running, your tests will fail (obviously).
+
 ### Variables
 
 Static variables can be defined for each test suite with the `variables` option, and then used in test definitions like `${this}`. When the test is run, each variable will be expanded in place.
 
 ```yaml
-suite: "Hello Endpoint Tests"
-description: "This suite tests the /hello endpoint"
+suite: "User Signup"
+description: "Confirms that protected routes cannot be accessed until the user signs up."
 variables:
   BASE_URL: "http://localhost:3000"
-  MESSAGE: "Hello, world!"
+  USER_EMAIL: "testuser2@test.com"
+  USER_PASSWORD: "F7%df12UU9lk"
 
 tests:
-  - test: "get hello"
+  - test: "Sign in"
+    description: "The user should be able to sign in with email and password"
     request:
-      method: GET
-      url: "${BASE_URL}/hello"
-    expect:
-      status: 200
+      method: POST
+      url: "${BASE_URL}/auth/signin"
+      headers:
+        Content-Type: application/json
       body:
-        message: ${MESSAGE}
+        email: ${USER_EMAIL}
+        password: ${USER_PASSWORD}
+    expect:
+      status: 2xx
+      body:
+        id: $exists
+        email: ${USER_EMAIL}
 ```
 
 Environment variables can be referenced in the same way. If a variable is set in both your local environment and in the `variables` section, the value specified in the `variables` section will take precedence.
@@ -141,7 +172,7 @@ tests:
         imageUrl: $regex /.*\.png$/
 ```
 
-Note: Each suite manages its own cookies internally, enabling session authentication to work automatically. There is no need to extract cookies to carry over between requests.
+Note: Each suite manages its own cookies internally, enabling session authentication to work automatically within a suite. There is no need to extract cookies to carry over between requests.
 
 ### Concurrency
 
@@ -162,21 +193,66 @@ Note: When using `parallel: true`, you cannot `extract` variables from responses
 
 Suites always run concurrently. You should not design your API tests to where any of your test suites rely on each other. The idea is to design each test suite to mock the flow of a typical user, and multiple users should be able to access your API concurrently and deterministically.
 
-## Planned Features
+### More Matchers
 
-Surf is under active development and is not production ready. If you want to contribute, feel free to reach out (or just start opening issues and PRs, whatever).
+- `$exists` - This matcher is a catchall for verifying that a header or response body returned _something_. Literally anything will match except null, undefined, or nothing.
 
-#### Planned Features
+- `$regex` - This matcher allows you to specify a regex that should match the returned value. The regex must be defined between forward slashes, for example: `/[Hh]ello[,\ ]+[Ww]orld!?/`. Note that unless you include the start/end-of-string matchers `^ $`, this will match _any_ part of the returned value. Example:
 
-1. More matchers - such as "$key_exists some_key" for objects, "$item_exists some_item" for arrays, "$starts_with some_prefix", "$contains some_value", etc.
-2. Testing endpoints under load, testing endpoint throttling or API limits
-3. Support for specifying a local `.env` file for loading variables
-4. An NPM package wrapper for installing in Node projects and globally
-5. Comprehensive test reports with configurable information density
+```yaml
+  - test: Recipe description mentions guacamole
+    description: "Not sure why, but the description should mention guacamole at least once"
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes/${RECIPE_ID}
+    expect:
+      status: 2xx
+      body:
+        id: ${RECIPE_ID}
+        name: Guacamole
+        description: $regex /([Gg]uacamole)+/
+```
 
-#### Stretch Features
-7. Support for other frameworks?
-8. Coverage reports?
-9. Whatever you suggest or require for your project.
+Note: Regex matchers only work on string values and will return false otherwise.
+
+- `$includes` - This matcher is useful for ensuring values exist in arrays. Any value that follows this keyword is incorporated as a matcher itself and follows the same matching rules. You can match strings, booleans, and even objects (however, you will have to define them as JSON strings). Example:
+
+```yaml
+  - test: Recipe in list
+    description: Recipe should be visible when listing all recipes
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes
+    expect:
+      status: 2xx
+      body:
+        data: '$includes { "id": "${RECIPE_ID}" }' # checks that the data array includes at least one object with the specified ID
+```
+Note: Technically you can even match values in nested arrays with `$includes $includes some-value`, since `$includes` is a valid matcher itself. `$includes $includes some-value` will check every inner array in an outer array (e.g. every cell in every row) to see if it contains a string `some-value`.
+
+## Planned Development
+
+Capti is under active development and is not production ready. If you want to contribute, feel free to reach out (or just start opening issues and PRs, whatever).
+
+### Upcoming Features
+
+1. More matchers - such as "$key_exists some_key" for objects, "$starts_with some_prefix", "$contains some_value", etc.
+2. Testing endpoints under load, testing endpoint throttling or API limits.
+3. Support for specifying a local `.env` file for loading variables.
+4. An NPM package wrapper for easy installing in Node projects and globally.
+5. Comprehensive test reports with configurable information density.
+
+### Stretch Features
+1. Support for other frameworks?
+2. Coverage reports?
+3. Whatever you suggest or require for your project.
+
+### Contributing
 
 What would you find useful in a tool like this? Feel free to create an issue or just jump right in and fork/clone/code something up.
+
+To run the app, ensure you already have Rust installed, and you have a REST API project you can test it on (or use the included `test-app`, a simple Express Rest API). Clone the repo locally, and run `cargo build` to create the project binary, located at `./target/debug/capti`. 
+
+Run this binary in a project containing some tests you've written (specify your test directory as an argument to running the binary) following the guidance above. 
+
+Note: If the above step is confusing, take a look at the "test" script in the `test_app` package.json file.

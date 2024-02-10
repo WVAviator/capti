@@ -95,6 +95,7 @@ export const createRecipeSchema = Joi.object({
   servings: Joi.number().required(),
   time: Joi.number().required(),
   description: Joi.string().required(),
+  imageUrl: Joi.string().optional(),
 });
 
 const createRecipe = async (
@@ -113,10 +114,17 @@ const createRecipe = async (
   }
 
   try {
-    const recipe = createRecipeSchema.validate(req.body).value;
+    const validation = createRecipeSchema.validate(req.body);
+    if (validation.error) {
+      return next({
+        log: `Error validating recipe: ${validation.error}`,
+        message: "Client Error",
+        status: 400,
+      });
+    }
 
     const savedRecipe = RecipeModel.build({
-      ...recipe,
+      ...req.body,
       userId: user.id,
     });
     await savedRecipe.save();
