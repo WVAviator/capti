@@ -1078,6 +1078,7 @@ dependencies = [
  "fern",
  "futures",
  "indicatif",
+ "lazy_static",
  "log",
  "regex",
  "reqwest",

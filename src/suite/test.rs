@@ -1,11 +1,14 @@
 use std::fmt::{self, Debug};
 
+use colored::Colorize;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
     client::Client,
     errors::config_error::ConfigurationError,
     matcher::match_result::MatchResult,
+    progress::Spinner,
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
@@ -28,6 +31,10 @@ impl TestDefinition {
         client: &Client,
         variables: Option<&mut VariableMap>,
     ) -> Result<TestResult, ConfigurationError> {
+        let spinner = Spinner::start(&self.test);
+
+        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
+
         let request = self.request.build_client_request(&client)?;
         let response = request.send().await?;
 
@@ -51,6 +58,8 @@ impl TestDefinition {
             (TestResult::Failed(_), true) => TestResult::Passed,
             (result, _) => result,
         };
+
+        spinner.finish(&test_result).await;
 
         return Ok(test_result);
     }
@@ -77,6 +86,21 @@ pub enum TestResult {
 impl TestResult {
     pub fn fail(message: impl Into<String>, match_result: &MatchResult) -> Self {
         TestResult::Failed(FailureReport::new(message, match_result.clone()))
+    }
+}
+
+impl fmt::Display for TestResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TestResult::Passed => write!(f, "{}", "[OK]".green()),
+            TestResult::Failed(_) => write!(f, "{}", "[FAILED]".red()),
+        }
+    }
+}
+
+impl Into<String> for &TestResult {
+    fn into(self) -> String {
+        format!("{}", self)
     }
 }
 

@@ -76,7 +76,6 @@ impl VariableMap {
         if let Some(caps) = full_regex.captures(actual) {
             for name in full_regex.capture_names().flatten() {
                 if let Some(value) = caps.name(name).map(|m| m.as_str().to_string()) {
-                    println!("Extracted variable {}: {}", name, value);
                     self.insert(name.to_string(), value);
                 }
             }

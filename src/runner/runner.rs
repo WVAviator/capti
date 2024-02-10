@@ -6,7 +6,6 @@ use super::run_config::RunConfig;
 
 pub struct Runner {
     suites: Vec<Suite>,
-    total_tests: usize,
     config: Option<RunConfig>,
 }
 
@@ -32,63 +31,36 @@ impl Runner {
             .filter_map(|path| std::fs::read_to_string(path).ok())
             .find_map(|data| serde_yaml::from_str::<RunConfig>(&data).ok());
 
-        let total_tests = suites.iter().map(|suite| suite.get_test_count()).sum();
-
-        Runner {
-            suites,
-            total_tests,
-            config,
-        }
+        Runner { suites, config }
     }
 
     pub async fn run(&mut self) {
-        let mut progress_bars = self
-            .suites
-            .iter()
-            .map(|suite| {
-                let pb = indicatif::ProgressBar::new(suite.get_test_count() as u64);
-                let prefix = format!("Running {}", &suite.suite);
-                pb.set_prefix(prefix);
-                pb
-            })
-            .collect::<Vec<indicatif::ProgressBar>>();
-
-        let primary_pb = indicatif::ProgressBar::new(self.total_tests as u64);
-
-        primary_pb.set_style(
-            indicatif::ProgressStyle::default_bar()
-                .template(
-                    "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {pos}/{len} ({eta})",
-                )
-                .expect("Error setting progress bar style."),
-        );
+        if let Some(config) = &self.config {
+            if let Some(setup) = &config.setup {
+                setup.execute_before_all().await;
+            }
+        }
 
         let mut futures = Vec::new();
-        for (suite, pb) in self.suites.iter_mut().zip(progress_bars.iter_mut()) {
-            let future = process(suite, pb, &primary_pb);
+        for suite in self.suites.iter_mut() {
+            let future = process(suite);
             futures.push(future);
         }
 
         let reports = futures::future::join_all(futures).await;
 
-        primary_pb.finish_with_message("All suites finished.");
-
-        for report in reports {
-            println!("{}", report);
+        if let Some(config) = &self.config {
+            if let Some(setup) = &config.setup {
+                setup.execute_after_all().await;
+            }
         }
+
+        // for report in reports {
+        //     println!("{}", report);
+        // }
     }
 }
-async fn process(
-    suite: &mut Suite,
-    pb: &indicatif::ProgressBar,
-    primary_pb: &indicatif::ProgressBar,
-) -> TestResultsReport {
-    let report = suite
-        .run(|_result| {
-            pb.inc(1);
-            primary_pb.inc(1);
-        })
-        .await;
-    pb.finish_with_message("Done.");
+async fn process(suite: &mut Suite) -> TestResultsReport {
+    let report = suite.run().await;
     report
 }

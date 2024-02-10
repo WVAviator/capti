@@ -37,10 +37,7 @@ impl Suite {
         return self.tests.len();
     }
 
-    pub async fn run<F>(&mut self, on_test_complete: F) -> TestResultsReport
-    where
-        F: Fn(&ReportedResult) -> (),
-    {
+    pub async fn run(&mut self) -> TestResultsReport {
         println!("Running {} tests...", self.tests.len());
 
         if let Some(setup) = &self.setup {
@@ -69,8 +66,6 @@ impl Suite {
                             setup.execute_after_each().await;
                         }
 
-                        on_test_complete(&reported_result);
-
                         return reported_result;
                     };
                     results.push(test_execution);
@@ -94,8 +89,6 @@ impl Suite {
                         setup.execute_after_each().await;
                     }
 
-                    on_test_complete(&reported_result);
-
                     results.push(reported_result);
                 }
                 results
@@ -108,7 +101,6 @@ impl Suite {
             setup.execute_after_all().await;
         }
 
-        println!("{}", report);
         return report;
     }
 }
