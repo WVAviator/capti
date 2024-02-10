@@ -14,7 +14,7 @@ use super::test::TestDefinition;
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct Suite {
-    suite: String,
+    pub suite: String,
     description: Option<String>,
     #[serde(default)]
     parallel: bool,
@@ -37,7 +37,10 @@ impl Suite {
         return self.tests.len();
     }
 
-    pub async fn run(&mut self) -> TestResultsReport {
+    pub async fn run<F>(&mut self, on_test_complete: F) -> TestResultsReport
+    where
+        F: Fn(&ReportedResult) -> (),
+    {
         println!("Running {} tests...", self.tests.len());
 
         if let Some(setup) = &self.setup {
@@ -66,6 +69,8 @@ impl Suite {
                             setup.execute_after_each().await;
                         }
 
+                        on_test_complete(&reported_result);
+
                         return reported_result;
                     };
                     results.push(test_execution);
@@ -88,6 +93,8 @@ impl Suite {
                     if let Some(setup) = &self.setup {
                         setup.execute_after_each().await;
                     }
+
+                    on_test_complete(&reported_result);
 
                     results.push(reported_result);
                 }
