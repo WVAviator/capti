@@ -2,9 +2,11 @@ use std::{collections::HashMap, ops::Deref};
 
 use serde::Deserialize;
 
-use regex::Captures;
+use regex::{escape, Captures, Regex};
 
 use crate::errors::config_error::ConfigurationError;
+
+static VARIABLE_MATCHER: &str = r"\$\{(\w+)\}";
 
 #[derive(Debug, Clone, PartialEq, Default, Deserialize)]
 pub struct VariableMap(HashMap<String, String>);
@@ -34,13 +36,9 @@ impl VariableMap {
         // TODO: Load env variables from .env file
     }
 
-    // pub fn get(&self, key: &str) -> Option<&String> {
-    //     self.0.get(key)
-    // }
-
     pub fn replace_variables(&mut self, value: &str) -> Result<String, ConfigurationError> {
-        // Matches continuous word characters inside curly braces
-        let var_regex = regex::Regex::new(r"\{(\w+)\}")?;
+        // Matches continuous ${words} wrapped like ${this}
+        let var_regex = Regex::new(VARIABLE_MATCHER)?;
 
         let result = var_regex.replace_all(value, |captures: &Captures| {
             if let Some(replacement_val) = self.get(&captures[1]) {
@@ -51,6 +49,40 @@ impl VariableMap {
         });
 
         Ok(result.to_string())
+    }
+
+    pub fn extract_variables(
+        &mut self,
+        extractor: &str,
+        actual: &str,
+    ) -> Result<(), ConfigurationError> {
+        let var_regex = Regex::new(VARIABLE_MATCHER).unwrap();
+        let mut regex_pattern = String::from("^");
+        let mut last_end = 0;
+
+        for cap in var_regex.captures_iter(extractor) {
+            let (start, end) = (cap.get(0).unwrap().start(), cap.get(0).unwrap().end());
+            let variable_name = cap.get(1).unwrap().as_str();
+
+            regex_pattern.push_str(&escape(&extractor[last_end..start]));
+            regex_pattern.push_str(&format!("(?P<{}>.+?)", variable_name));
+
+            last_end = end;
+        }
+        regex_pattern.push_str(&escape(&extractor[last_end..]));
+        regex_pattern.push_str("$");
+
+        let full_regex = Regex::new(&regex_pattern).unwrap();
+        if let Some(caps) = full_regex.captures(actual) {
+            for name in full_regex.capture_names().flatten() {
+                if let Some(value) = caps.name(name).map(|m| m.as_str().to_string()) {
+                    println!("Extracted variable {}: {}", name, value);
+                    self.insert(name.to_string(), value);
+                }
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -71,9 +103,47 @@ mod test {
         variables.insert("HELLO", "hi");
         variables.insert("WORLD", "universe");
 
-        let value = "Say {HELLO} to the {WORLD}!";
+        let value = "Say ${HELLO} to the ${WORLD}!";
         let result = variables.replace_variables(value).unwrap();
 
         assert_eq!(result, "Say hi to the universe!");
+    }
+
+    #[test]
+    fn extracts_variable_from_str() {
+        let mut variables = VariableMap::new();
+
+        let extractor = "The quick ${COLOR} fox jumped over the lazy dog.";
+        let actual = "The quick brown fox jumped over the lazy dog.";
+
+        variables.extract_variables(extractor, actual).unwrap();
+
+        assert_eq!(variables["COLOR"], "brown");
+    }
+
+    #[test]
+    fn extracts_multiple_vars_from_str() {
+        let mut variables = VariableMap::new();
+
+        let extractor = "The quick ${COLOR} fox jumped over the ${LAZY} dog.";
+        let actual = "The quick brown fox jumped over the lazy dog.";
+
+        variables.extract_variables(extractor, actual).unwrap();
+
+        assert_eq!(variables["COLOR"], "brown");
+        assert_eq!(variables["LAZY"], "lazy");
+    }
+
+    #[test]
+    fn extracts_complex_sequences() {
+        let mut variables = VariableMap::new();
+
+        let extractor = "1111111111111${ABC}11111111111${DEF}111111";
+        let actual = "1111111111111333111111111111111111111";
+
+        variables.extract_variables(extractor, actual).unwrap();
+
+        assert_eq!(variables["ABC"], "333");
+        assert_eq!(variables["DEF"], "1111");
     }
 }

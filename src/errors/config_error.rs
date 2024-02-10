@@ -31,4 +31,20 @@ pub enum ConfigurationError {
         #[from]
         source: reqwest::Error,
     },
+
+    #[error("Extraction from response failed: {0}")]
+    ExtractError(String),
+
+    #[error("Error occurred attempting to run tests in parallel: {0}")]
+    ParallelError(String),
+}
+
+impl ConfigurationError {
+    pub fn extract_error(message: impl Into<String>) -> Self {
+        ConfigurationError::ExtractError(message.into())
+    }
+
+    pub fn parallel_error(message: impl Into<String>) -> Self {
+        ConfigurationError::ParallelError(message.into())
+    }
 }
