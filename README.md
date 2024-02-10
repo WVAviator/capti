@@ -1,6 +1,6 @@
-# Surf
+# Capti
 
-Surf is a lightweight end-to-end testing framework for REST APIs or for Contract Tests. 
+Capti is a lightweight end-to-end testing framework for REST APIs or for Contract Tests. 
 
 ## Basic Usage
 
@@ -101,7 +101,7 @@ setup:
         fi
 ```
 
-Note: Running shell scripts before or after your tests is entirely optional - it's fine to start your server manually and then run Surf, just understand that if your server is not running, your tests will fail (obviously).
+Note: Running shell scripts before or after your tests is entirely optional - it's fine to start your server manually and then run Capti, just understand that if your server is not running, your tests will fail (obviously).
 
 ### Variables
 
@@ -232,7 +232,7 @@ Note: Technically you can even match values in nested arrays with `$includes $in
 
 ## Planned Development
 
-Surf is under active development and is not production ready. If you want to contribute, feel free to reach out (or just start opening issues and PRs, whatever).
+Capti is under active development and is not production ready. If you want to contribute, feel free to reach out (or just start opening issues and PRs, whatever).
 
 ### Upcoming Features
 
@@ -251,7 +251,7 @@ Surf is under active development and is not production ready. If you want to con
 
 What would you find useful in a tool like this? Feel free to create an issue or just jump right in and fork/clone/code something up.
 
-To run the app, ensure you already have Rust installed, and you have a REST API project you can test it on (or use the included `test-app`, a simple Express Rest API). Clone the repo locally, and run `cargo build` to create the project binary, located at `./target/debug/surf`. 
+To run the app, ensure you already have Rust installed, and you have a REST API project you can test it on (or use the included `test-app`, a simple Express Rest API). Clone the repo locally, and run `cargo build` to create the project binary, located at `./target/debug/capti`. 
 
 Run this binary in a project containing some tests you've written (specify your test directory as an argument to running the binary) following the guidance above. 
 

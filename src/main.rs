@@ -1,7 +1,7 @@
+use capti::errors::config_error::ConfigurationError;
+use capti::runner::runner::Runner;
+use capti::Args;
 use clap::Parser;
-use surf::errors::config_error::ConfigurationError;
-use surf::runner::runner::Runner;
-use surf::Args;
 
 #[tokio::main]
 async fn main() -> Result<(), ConfigurationError> {
