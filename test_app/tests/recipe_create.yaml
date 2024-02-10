@@ -85,6 +85,15 @@ tests:
         id: ${RECIPE_ID}
         name: Guacamole
 
+  - test: Recipe in list
+    description: Recipe should be visible when listing all recipes
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes
+    expect:
+      status: 2xx
+      body: '$includes { "id": "${RECIPE_ID}" }'
+
   - test: Delete recipe
     description: "Deletes the new recipe"
     request:
