@@ -25,6 +25,7 @@
     "capti": "./bin/capti"
   },
   "scripts": {
+    "prepublishOnly": "cp ../README.md ./README.md",
     "postinstall": "node scripts/download.js"
   },
   "author": "wvaviator",
