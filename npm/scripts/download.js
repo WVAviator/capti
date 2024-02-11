@@ -3,6 +3,8 @@ import os from 'os';
 import fs from 'fs';
 
 const BINARY_PATH = './bin/capti';
+const SUPPORTED_PLATFORMS = ['linux', 'darwin', 'win32'];
+const SUPPORTED_ARCHS = ['x64', 'arm64'];
 
 const createLogger = () => {
   const date = new Date().toISOString();
@@ -20,6 +22,12 @@ const download = async () => {
   const arch = os.arch();
 
   log(`Detected platform: ${platform}, arch: ${arch}`);
+
+  if (!SUPPORTED_PLATFORMS.includes(platform) || !SUPPORTED_ARCHS.includes(arch)) {
+    log(`Unsupported platform or architecture: ${platform}, ${arch}`);
+    console.error("Unsupported platform or architecture:", platform, arch);
+    process.exit(1);
+  }
 
   const binary = `capti-${platform}-${arch}`;
 
