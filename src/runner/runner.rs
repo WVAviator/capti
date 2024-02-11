@@ -1,8 +1,9 @@
 use std::path::PathBuf;
 
+use colored::Colorize;
 use walkdir::WalkDir;
 
-use crate::{progress_println, suite::report::TestResultsReport, Suite};
+use crate::{formatting::Heading, progress_println, suite::report::TestResultsReport, Suite};
 
 use super::run_config::RunConfig;
 
@@ -74,9 +75,43 @@ impl Runner {
             }
         }
 
-        for report in reports {
+        for report in reports.iter() {
             progress_println!("{}", report);
         }
+
+        let total_tests = reports
+            .iter()
+            .fold(0, |acc, report| acc + report.total_tests)
+            .to_string();
+        let total_passed = reports.iter().fold(0, |acc, report| acc + report.passed);
+        let total_failed = reports.iter().fold(0, |acc, report| acc + report.failed);
+        let total_errors = reports.iter().fold(0, |acc, report| acc + report.errors);
+
+        let total_passed = match total_passed {
+            0 => "0".normal(),
+            _ => total_passed.to_string().green(),
+        };
+
+        let total_failed = match total_failed {
+            0 => "0".normal(),
+            _ => total_failed.to_string().red(),
+        };
+
+        let total_errors = match total_errors {
+            0 => "0".normal(),
+            _ => total_errors.to_string().yellow(),
+        };
+
+        let heading = "Results Summary".header();
+
+        progress_println!(
+            " \n{}\n \nTotal Tests: {}\n \nTotal Passed: {}\nTotal Failed: {}\nTotal Errors: {}\n ",
+            heading,
+            total_tests,
+            total_passed,
+            total_failed,
+            total_errors,
+        );
     }
 }
 async fn process(suite: &mut Suite) -> TestResultsReport {

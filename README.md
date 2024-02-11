@@ -9,6 +9,7 @@ Capti is currently available as an NPM package, however Capti is framework-agnos
 Note: Support for other package managers and testing frameworks is under consideration - please see the notes below about [contributing](#contributing) if you have any suggestions or requests.
 
 To install Capti globally and use it anywhere:
+
 ```bash
 $ npm install -g capti
 ```

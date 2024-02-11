@@ -9,6 +9,7 @@ Capti is currently available as an NPM package, however Capti is framework-agnos
 Note: Support for other package managers and testing frameworks is under consideration - please see the notes below about [contributing](#contributing) if you have any suggestions or requests.
 
 To install Capti globally and use it anywhere:
+
 ```bash
 $ npm install -g capti
 ```
@@ -298,6 +299,9 @@ Here are some additional features of Capti that don't fit into any of the catego
 - For helpful debugging, you can set the property `print_response: true` on your tests, and the full response returned from your server will be printed in the console. 
 
 - To assert that a test _should fail_ rather than pass, you can set the property `should_fail: true` on the test. However, most of the time you should be able to get what you need using matchers and if not - make a suggestion!
+
+- Headers are matched case-insensitive. Newer recommendations in the HTTP specifications suggest using lowercase, and most frameworks will default to using lowercase. If you specify capitalized headers in your `expect` definition, they will still match their lowercase versions.
+
 
 ## Planned Development
 

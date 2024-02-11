@@ -2,7 +2,7 @@ use std::fmt;
 
 use colored::Colorize;
 
-use crate::errors::CaptiError;
+use crate::{errors::CaptiError, formatting::Heading};
 
 use super::test::{TestDefinition, TestResult};
 
@@ -72,7 +72,7 @@ impl TestResultsReport {
 impl fmt::Display for TestResultsReport {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, " ")?;
-        writeln!(f, "== {} =======", self.suite)?;
+        writeln!(f, "{}", self.suite.header())?;
         writeln!(f, " ")?;
 
         for result in &self.results {
