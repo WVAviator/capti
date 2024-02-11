@@ -1,6 +1,8 @@
 use std::{collections::HashMap, fmt::Debug, hash::Hash};
 
-use super::match_result::MatchResult;
+use serde::Serialize;
+
+use super::{match_result::MatchResult, matcher::Matcher};
 
 /// The MatchCmp trait implements match_cmp, which allows an object to be compared to another,
 /// where the other object can have additional fields that are ignored. This is commonly referenced
@@ -33,9 +35,16 @@ where
 
 impl MatchCmp for String {
     fn match_cmp(&self, other: &Self) -> MatchResult {
-        match self.eq(other) {
-            true => MatchResult::Matches,
-            false => MatchResult::ValueMismatch {
+        let string_value = serde_json::to_value(self.clone());
+
+        match string_value {
+            Ok(serde_json::Value::String(s))
+                if Matcher::from(s.clone())
+                    .matches_value(&serde_json::Value::String(other.to_string())) =>
+            {
+                MatchResult::Matches
+            }
+            _ => MatchResult::ValueMismatch {
                 expected: self.into(),
                 actual: other.into(),
                 context: None,
@@ -47,7 +56,7 @@ impl MatchCmp for String {
 impl<K, V> MatchCmp for HashMap<K, V>
 where
     K: Eq + PartialEq + Hash + Debug,
-    V: MatchCmp + Debug,
+    V: MatchCmp + Serialize + Clone + Debug,
 {
     fn match_cmp(&self, other: &Self) -> MatchResult {
         for (key, value) in self {
@@ -55,16 +64,34 @@ where
                 Some(other_value) => match value.match_cmp(other_value) {
                     MatchResult::Matches => continue,
                     o => {
-                        return o
-                            .with_context(format!("at compare ( {:#?}: {:#?} )", &key, &value))
-                            .with_context(format!("at compare ( {:#?} : {:#?} )", &self, &other))
+                        return o.with_context(format!("at compare ( {:#?}: {:#?} )", &key, &value))
                     }
                 },
                 _ => {
+                    if let Ok(serde_json::Value::String(s)) =
+                        serde_json::to_value::<V>(value.clone())
+                    {
+                        match s {
+                            s if Matcher::from(s.clone())
+                                .matches_value(&serde_json::Value::Null) =>
+                            {
+                                continue
+                            }
+                            _ => {
+                                return MatchResult::Missing {
+                                    key: format!("{:#?}", &key),
+                                    context: Some(format!(
+                                        "at compare ( {:#?}: {:#?} )",
+                                        &key, &value
+                                    )),
+                                }
+                            }
+                        }
+                    }
                     return MatchResult::Missing {
                         key: format!("{:#?}", &key),
                         context: Some(format!("at compare ( {:#?}: {:#?} )", &key, &value)),
-                    }
+                    };
                 }
             }
         }

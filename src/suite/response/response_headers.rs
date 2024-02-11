@@ -5,7 +5,7 @@ use crate::{
 };
 use reqwest::header::HeaderMap;
 use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, ops::Deref};
+use std::{collections::HashMap, fmt, ops::Deref};
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -23,7 +23,13 @@ impl SuiteVariables for ResponseHeaders {
 
 impl MatchCmp for ResponseHeaders {
     fn match_cmp(&self, other: &Self) -> MatchResult {
-        self.0.match_cmp(&other.0)
+        let lowercase_headers = self
+            .0
+            .iter()
+            .map(|(key, value)| (key.to_lowercase(), value.clone()))
+            .collect::<HashMap<String, String>>();
+
+        lowercase_headers.match_cmp(&other.0)
     }
 }
 
@@ -46,10 +52,7 @@ impl From<&HeaderMap> for ResponseHeaders {
                     }
                 };
 
-                Some((
-                    header,
-                    value.to_string(), // TODO: Better way?
-                ))
+                Some((header, value.to_string()))
             })
             .collect::<HashMap<String, String>>();
 
@@ -61,5 +64,15 @@ impl Deref for ResponseHeaders {
     type Target = HashMap<String, String>;
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl fmt::Display for ResponseHeaders {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Headers:")?;
+        for (key, value) in self.0.iter() {
+            writeln!(f, "    ▹ {}: {}", key, value)?;
+        }
+        Ok(())
     }
 }

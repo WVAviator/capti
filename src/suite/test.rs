@@ -7,8 +7,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     client::Client,
     errors::CaptiError,
+    formatting::Heading,
     matcher::match_result::MatchResult,
     progress::Spinner,
+    progress_println,
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
@@ -26,6 +28,8 @@ pub struct TestDefinition {
     pub request: RequestDefinition,
     pub expect: ResponseDefinition,
     pub extract: Option<ResponseExtractor>,
+    #[serde(default)]
+    print_response: bool,
 }
 
 impl TestDefinition {
@@ -52,7 +56,16 @@ impl TestDefinition {
     ) -> Result<TestResult, CaptiError> {
         let request = self.request.build_client_request(&client)?;
         let response = request.send().await?;
+
         let response = ResponseDefinition::from_response(response).await;
+
+        if self.print_response {
+            let title = format!("Response: ({})", &self.test);
+            let heading = &title.header();
+            let footer = &title.footer();
+
+            progress_println!("\n{}\n{}{}\n ", &heading, &response, &footer);
+        }
 
         let test_result = self.expect.compare(&response);
 
