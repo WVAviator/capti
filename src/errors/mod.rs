@@ -1,1 +1,3 @@
-pub mod config_error;
+pub mod capti_error;
+
+pub use capti_error::CaptiError;

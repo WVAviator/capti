@@ -1,5 +1,5 @@
 use crate::{
-    errors::config_error::ConfigurationError,
+    errors::CaptiError,
     matcher::{MatchCmp, MatchResult},
     variables::{variable_map::VariableMap, SuiteVariables},
 };
@@ -12,10 +12,7 @@ use std::{collections::HashMap, ops::Deref};
 pub struct ResponseHeaders(HashMap<String, String>);
 
 impl SuiteVariables for ResponseHeaders {
-    fn populate_variables(
-        &mut self,
-        variables: &mut VariableMap,
-    ) -> Result<(), ConfigurationError> {
+    fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), CaptiError> {
         for (_, value) in self.0.iter_mut() {
             *value = variables.replace_variables(value.as_str())?;
         }
@@ -39,11 +36,20 @@ impl From<&HeaderMap> for ResponseHeaders {
                 Some(header) => Some((header, value)),
                 None => None,
             })
-            .map(|(header, value)| {
-                (
-                    header.as_str().to_string(),
-                    value.to_str().unwrap().to_string(), // TODO: Better way?
-                )
+            .filter_map(|(header, value)| {
+                let header = header.to_string();
+                let value = match value.to_str() {
+                    Ok(value) => value,
+                    Err(_) => {
+                        eprintln!("Failed to convert header value to string.");
+                        return None;
+                    }
+                };
+
+                Some((
+                    header,
+                    value.to_string(), // TODO: Better way?
+                ))
             })
             .collect::<HashMap<String, String>>();
 
@@ -57,4 +63,3 @@ impl Deref for ResponseHeaders {
         &self.0
     }
 }
-

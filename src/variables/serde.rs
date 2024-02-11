@@ -1,12 +1,9 @@
-use crate::errors::config_error::ConfigurationError;
+use crate::errors::CaptiError;
 
 use super::{variable_map::VariableMap, SuiteVariables};
 
 impl SuiteVariables for serde_json::Value {
-    fn populate_variables(
-        &mut self,
-        variables: &mut VariableMap,
-    ) -> Result<(), ConfigurationError> {
+    fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), CaptiError> {
         match self {
             serde_json::Value::Object(map) => {
                 for (_, value) in map.iter_mut() {

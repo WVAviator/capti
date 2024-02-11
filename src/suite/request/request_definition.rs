@@ -2,7 +2,7 @@ use reqwest::RequestBuilder;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    errors::config_error::ConfigurationError,
+    errors::CaptiError,
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
@@ -20,7 +20,7 @@ impl RequestDefinition {
     pub fn build_client_request(
         &self,
         client: &reqwest::Client,
-    ) -> Result<RequestBuilder, ConfigurationError> {
+    ) -> Result<RequestBuilder, CaptiError> {
         let mut request_builder = match self.method {
             RequestMethod::Get => client.get(&self.url),
             RequestMethod::Post => client.post(&self.url),
@@ -43,10 +43,7 @@ impl RequestDefinition {
 }
 
 impl SuiteVariables for RequestDefinition {
-    fn populate_variables(
-        &mut self,
-        variables: &mut VariableMap,
-    ) -> Result<(), ConfigurationError> {
+    fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), CaptiError> {
         self.url = variables.replace_variables(&self.url)?;
         self.headers.populate_variables(variables)?;
         self.body.populate_variables(variables)?;

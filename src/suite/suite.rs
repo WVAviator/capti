@@ -2,12 +2,12 @@ use serde::Deserialize;
 
 use crate::{
     client::Client,
-    errors::config_error::ConfigurationError,
+    errors::CaptiError,
     suite::{report::TestResultsReport, setup::SuiteSetup},
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
-use super::test::TestDefinition;
+use super::{report::ReportedResult, test::TestDefinition};
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct Suite {
@@ -24,7 +24,7 @@ pub struct Suite {
 }
 
 impl Suite {
-    pub fn from_file(path: &str) -> Result<Self, ConfigurationError> {
+    pub fn from_file(path: &str) -> Result<Self, CaptiError> {
         let suite = std::fs::read_to_string(path)?;
         let suite = serde_yaml::from_str::<Suite>(&suite)?;
         return Ok(suite);
@@ -70,8 +70,11 @@ impl Suite {
             false => {
                 let mut results = vec![];
                 for test in self.tests.iter_mut() {
-                    test.populate_variables(&mut self.variables)
-                        .expect("Error populating variables for test.");
+                    if let Err(e) = test.populate_variables(&mut self.variables) {
+                        let reported_result = ReportedResult::new(test, Err(e));
+                        results.push(reported_result);
+                        continue;
+                    }
 
                     if let Some(setup) = &self.setup {
                         setup.execute_before_each().await;

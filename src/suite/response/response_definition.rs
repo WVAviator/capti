@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    errors::config_error::ConfigurationError,
+    errors::CaptiError,
     matcher::{match_result::MatchResult, status_matcher::StatusMatcher, MatchCmp},
     suite::test::TestResult,
     variables::{variable_map::VariableMap, SuiteVariables},
@@ -59,10 +59,7 @@ impl ResponseDefinition {
 }
 
 impl SuiteVariables for ResponseDefinition {
-    fn populate_variables(
-        &mut self,
-        variables: &mut VariableMap,
-    ) -> Result<(), ConfigurationError> {
+    fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), CaptiError> {
         self.headers.populate_variables(variables)?;
         self.body.populate_variables(variables)?;
 

@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     client::Client,
-    errors::config_error::ConfigurationError,
+    errors::CaptiError,
     matcher::match_result::MatchResult,
     progress::Spinner,
     variables::{variable_map::VariableMap, SuiteVariables},
@@ -49,7 +49,7 @@ impl TestDefinition {
         &self,
         client: &Client,
         variables: Option<&mut VariableMap>,
-    ) -> Result<TestResult, ConfigurationError> {
+    ) -> Result<TestResult, CaptiError> {
         let request = self.request.build_client_request(&client)?;
         let response = request.send().await?;
         let response = ResponseDefinition::from_response(response).await;
@@ -74,7 +74,7 @@ impl TestDefinition {
             if let Some(variables) = variables {
                 extractor.extract(&response, variables).await?;
             } else {
-                return Err(ConfigurationError::parallel_error("Cannot extract variables from tests running in parallel. Try setting the suite to 'parallel: false'"));
+                return Err(CaptiError::parallel_error("Cannot extract variables from tests running in parallel. Try setting the suite to 'parallel: false'"));
             }
         }
 
@@ -83,10 +83,7 @@ impl TestDefinition {
 }
 
 impl SuiteVariables for TestDefinition {
-    fn populate_variables(
-        &mut self,
-        variables: &mut VariableMap,
-    ) -> Result<(), ConfigurationError> {
+    fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), CaptiError> {
         self.request.populate_variables(variables)?;
         self.expect.populate_variables(variables)?;
 
