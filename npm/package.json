@@ -26,9 +26,10 @@
   },
   "scripts": {
     "prepublishOnly": "cp ../README.md ./README.md",
-    "postinstall": "node scripts/download.js"
+    "install": "node scripts/download.js"
   },
   "author": "wvaviator",
   "license": "MIT"
 }
+
 
