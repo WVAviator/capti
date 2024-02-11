@@ -33,7 +33,7 @@ const download = async () => {
 
   log(`Downloading ${binary}`);
 
-  const url = `https://github.com/wvaviator/capti/releases/download/${version}/${binary}`;
+  const url = `https://github.com/WVAviator/capti/releases/download/${version}/${binary}`;
 
   log(`Downloading from ${url}`);
 
