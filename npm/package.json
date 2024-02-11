@@ -16,7 +16,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/WVAviator/capti.git",
+    "url": "git+https://github.com/WVAviator/capti.git",
     "directory": "npm"
   },
   "type": "module",

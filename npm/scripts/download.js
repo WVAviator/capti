@@ -1,4 +1,3 @@
-import { version } from '../package.json';
 import os from 'os';
 import fs from 'fs';
 
@@ -16,6 +15,15 @@ const createLogger = () => {
 }
 
 const log = createLogger();
+
+const loadPackageJson = () => {
+  const data = fs.readFileSync('package.json', { encoding: 'utf8' });
+  return JSON.parse(data);
+}
+
+const { version } = await loadPackageJson();
+log(`Loaded version ${version} from package.json`);
+
 
 const download = async () => {
   const platform = os.platform();
@@ -45,17 +53,28 @@ const download = async () => {
       throw new Error(response.statusText);
     }
 
-    log("Downloaded successfully. Writing to binary file.");
+    log("Downloaded successfully. Extracting binary...");
 
-    const buffer = await response.buffer();
+    const arrayBuffer = await response.arrayBuffer();
+    log("Array buffer loaded, converting to buffer...")
 
-    fs.writeFile(BINARY_PATH, buffer);
-    fs.chmod(BINARY_PATH, 0o755);
+    const buffer = Buffer.from(arrayBuffer);
+    log("Buffer created, writing to file...");
 
-    log(`Successfully downloaded to ${BINARY_PATH}`);
+    fs.createWriteStream(BINARY_PATH).write(buffer);
+    log("Buffer written to file, setting permissions...");
+
+    fs.chmod(BINARY_PATH, 0o755, (err) => {
+      if (err) {
+        throw err;
+      }
+      log("Permissions set.");
+      log(`Successfully downloaded to ${BINARY_PATH}`);
+    });
+
   } catch (error) {
     log(`Failed to download: ${error.message}`);
-    console.error("Failed to download:", error.message);
+    console.error("Failed to download/install:", error.message);
     process.exit(1);
   }
 
