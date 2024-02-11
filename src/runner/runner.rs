@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use walkdir::WalkDir;
 
 use crate::{progress_println, suite::report::TestResultsReport, Suite};
@@ -10,7 +12,7 @@ pub struct Runner {
 }
 
 impl Runner {
-    pub fn from_path(path: &String) -> Self {
+    pub fn from_path(path: PathBuf) -> Self {
         let suites = WalkDir::new(&path)
             .into_iter()
             .filter_map(|e| e.ok())
@@ -29,7 +31,7 @@ impl Runner {
             .into_iter()
             .filter_map(|e| e.ok())
             .filter(|e| match e.path().file_name() {
-                Some(name) => name == "config.yaml" || name == "config.yml",
+                Some(name) => name == "capti-config.yaml" || name == "capti-config.yml",
                 None => false,
             })
             .map(|e| e.path().to_path_buf())

@@ -84,7 +84,7 @@ Omitting the `wait_until` option means the script will run concurrently in the b
 
 ### Config
 
-If you need to run 'before_all' or 'after_all' setup scripts only once for an entire collection of test suites, you can define a `config.yaml` in your test directory with the same setup syntax pictured above. 
+If you need to run 'before_all' or 'after_all' setup scripts only once for an entire collection of test suites, you can define a `capti-config.yaml` in your test directory with the same setup syntax pictured above. 
 
 Here is an example config that works with Docker Compose on Unix/Linux systems to check if the containers are already up and if not, starts them.
 
