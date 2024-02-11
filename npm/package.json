@@ -1,6 +1,6 @@
 {
   "name": "capti",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "Capti is a comprehensive end-to-end REST API testing framework.",
   "keywords": [
     "testing",
