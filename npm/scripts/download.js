@@ -3,8 +3,11 @@ import fs from "fs";
 import fsPromises from "fs/promises";
 
 const BINARY_PATH = "./bin/capti";
-const SUPPORTED_PLATFORMS = ["linux", "darwin", "win32"];
-const SUPPORTED_ARCHS = ["x64", "arm64"];
+const SUPPORTED_ARCHITECTURE = {
+  linux: ["x64", "arm64"],
+  darwin: ["x64", "arm64"],
+  win32: ["x64"],
+};
 
 const createLogger = () => {
   const date = new Date().toISOString();
@@ -32,11 +35,10 @@ const download = async () => {
   log(`Detected platform: ${platform}, arch: ${arch}`);
 
   if (
-    !SUPPORTED_PLATFORMS.includes(platform) ||
-    !SUPPORTED_ARCHS.includes(arch)
+    !SUPPORTED_ARCHITECTURE[platform].includes(arch)
   ) {
-    log(`Unsupported platform or architecture: ${platform}, ${arch}`);
-    console.error("Unsupported platform or architecture:", platform, arch);
+    log(`Unsupported platform and architecture: ${platform} ${arch}`);
+    console.error("Unsupported platform and architecture:", platform, arch);
     process.exit(1);
   }
 

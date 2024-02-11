@@ -22,12 +22,18 @@ macro_rules! progress_println {
             let multiprogress = crate::progress::multiprogress::multiprogress()
                 .lock();
 
+            // if let Ok(multiprogress) = multiprogress {
+            //     if let Err(_) = multiprogress.println(format!($($arg)*)) {
+            //         eprintln!("Failed to log test progress.");
+            //     }
+            // } else {
+            //     eprintln!("Failed to log test progress.");
+            // }
+
             if let Ok(multiprogress) = multiprogress {
-                if let Err(_) = multiprogress.println(format!($($arg)*)) {
-                    eprintln!("Failed to log test progress.");
-                }
-            } else {
-                eprintln!("Failed to log test progress.");
+                multiprogress.suspend(|| {
+                    println!($($arg)*);
+                });
             }
         }
     }

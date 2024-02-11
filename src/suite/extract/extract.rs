@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    errors::config_error::ConfigurationError,
+    errors::CaptiError,
     suite::response::{response_headers::ResponseHeaders, ResponseDefinition},
     variables::variable_map::VariableMap,
 };
@@ -17,7 +17,7 @@ impl ResponseExtractor {
         &self,
         response: &ResponseDefinition,
         variables: &mut VariableMap,
-    ) -> Result<(), ConfigurationError> {
+    ) -> Result<(), CaptiError> {
         let response_body = match &response.body {
             Some(body) => body,
             None => &serde_json::Value::Null,
@@ -33,14 +33,14 @@ impl ResponseExtractor {
                             variables.extract_variables(value, header_value)?;
                         }
                         None => {
-                            return Err(ConfigurationError::extract_error(format!(
+                            return Err(CaptiError::extract_error(format!(
                                 "Missing header {} in response.",
                                 &key
                             )))
                         }
                     },
                     None => {
-                        return Err(ConfigurationError::extract_error(format!(
+                        return Err(CaptiError::extract_error(format!(
                             "Missing header {} in response.",
                             &key
                         )))
@@ -57,7 +57,7 @@ fn body_extract(
     left: &serde_json::Value,
     right: &serde_json::Value,
     variables: &mut VariableMap,
-) -> Result<(), ConfigurationError> {
+) -> Result<(), CaptiError> {
     match (left, right) {
         (serde_json::Value::Null, _) => {}
         (serde_json::Value::Object(left), serde_json::Value::Object(right)) => {
@@ -65,7 +65,7 @@ fn body_extract(
                 match right.get(key) {
                     Some(right_value) => body_extract(value, right_value, variables)?,
                     None => {
-                        return Err(ConfigurationError::extract_error(format!(
+                        return Err(CaptiError::extract_error(format!(
                             "Missing key {} in response body.",
                             &key
                         )))
@@ -80,14 +80,14 @@ fn body_extract(
         }
         (serde_json::Value::String(left), serde_json::Value::String(right)) => {
             variables.extract_variables(left, right).map_err(|_| {
-                ConfigurationError::extract_error(format!(
+                CaptiError::extract_error(format!(
                     "Failed to extract variables from '{}' using matcher '{}'.",
                     &right, &left
                 ))
             })?;
         }
         (left, right) => {
-            return Err(ConfigurationError::extract_error(format!(
+            return Err(CaptiError::extract_error(format!(
                 "Variable extraction failed - cannot compare '{}' with '{}' - invalid type.",
                 &left, &right
             )))

@@ -48,7 +48,9 @@ impl MatchCmp for StatusMatcher {
 impl fmt::Display for StatusMatcher {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            StatusMatcher::Exact(n) => write!(f, "{}", n),
+            StatusMatcher::Exact(n) => {
+                writeln!(f, "Status: {}", n)
+            }
             StatusMatcher::Class(s) => match s.as_str() {
                 "2xx" => write!(f, "200-299"),
                 "3xx" => write!(f, "300-399"),

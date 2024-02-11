@@ -38,12 +38,19 @@ impl MatchCmp for serde_json::Map<String, serde_json::Value> {
                             .with_context(format!("at compare ( {:#?} : {:#?} )", &self, &other))
                     }
                 },
-                _ => {
-                    return MatchResult::Missing {
-                        key: format!("{:#?}", &key),
-                        context: Some(format!("at compare ( {:#?}: {:#?} )", &key, &value)),
+                _ => match value {
+                    serde_json::Value::String(s)
+                        if Matcher::from(s).matches_value(&serde_json::Value::Null) =>
+                    {
+                        continue;
                     }
-                }
+                    _ => {
+                        return MatchResult::Missing {
+                            key: format!("{:#?}", &key),
+                            context: Some(format!("at compare ( {:#?}: {:#?} )", &key, &value)),
+                        }
+                    }
+                },
             }
         }
 

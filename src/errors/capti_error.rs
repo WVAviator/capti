@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Debug, Error)]
-pub enum ConfigurationError {
+pub enum CaptiError {
     #[error("Error parsing YAML test suite content: {source:#?}")]
     YamlParseError {
         #[from]
@@ -14,7 +14,7 @@ pub enum ConfigurationError {
         source: serde_json::Error,
     },
 
-    #[error("Error reading test suite file: {source:#?}")]
+    #[error("Error reading test suite directory path: {source:#?}")]
     FilePathError {
         #[from]
         source: std::io::Error,
@@ -37,14 +37,17 @@ pub enum ConfigurationError {
 
     #[error("Error occurred attempting to run tests in parallel: {0}")]
     ParallelError(String),
+
+    #[error("Error occurred setting up client for requests. Error: {source}")]
+    ClientError { source: reqwest::Error },
 }
 
-impl ConfigurationError {
+impl CaptiError {
     pub fn extract_error(message: impl Into<String>) -> Self {
-        ConfigurationError::ExtractError(message.into())
+        CaptiError::ExtractError(message.into())
     }
 
     pub fn parallel_error(message: impl Into<String>) -> Self {
-        ConfigurationError::ParallelError(message.into())
+        CaptiError::ParallelError(message.into())
     }
 }

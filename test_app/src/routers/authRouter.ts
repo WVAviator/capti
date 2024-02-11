@@ -11,7 +11,10 @@ const router = Router();
 // Manual Auth Routes
 
 router.post("/signup", signup, (req: Request, res: Response) => {
-  res.status(200).json(res.locals.user);
+  res
+    .status(200)
+    .set({ "Content-Type": "application/json" })
+    .json(res.locals.user);
 });
 
 router.post("/signin", signin, (req: Request, res: Response) => {

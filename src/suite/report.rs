@@ -2,7 +2,7 @@ use std::fmt;
 
 use colored::Colorize;
 
-use crate::errors::config_error::ConfigurationError;
+use crate::{errors::CaptiError, formatting::Heading};
 
 use super::test::{TestDefinition, TestResult};
 
@@ -17,11 +17,11 @@ pub struct TestResultsReport {
 
 pub struct ReportedResult {
     pub test: TestDefinition,
-    pub result: Result<TestResult, ConfigurationError>,
+    pub result: Result<TestResult, CaptiError>,
 }
 
 impl ReportedResult {
-    pub fn new(test: &TestDefinition, result: Result<TestResult, ConfigurationError>) -> Self {
+    pub fn new(test: &TestDefinition, result: Result<TestResult, CaptiError>) -> Self {
         ReportedResult {
             test: test.clone(),
             result,
@@ -72,7 +72,7 @@ impl TestResultsReport {
 impl fmt::Display for TestResultsReport {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, " ")?;
-        writeln!(f, "== {} =======", self.suite)?;
+        writeln!(f, "{}", self.suite.header())?;
         writeln!(f, " ")?;
 
         for result in &self.results {

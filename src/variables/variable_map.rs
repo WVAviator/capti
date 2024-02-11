@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 use regex::{escape, Captures, Regex};
 
-use crate::{errors::config_error::ConfigurationError, progress_println};
+use crate::{errors::CaptiError, progress_println};
 
 // Matches continuous ${words} wrapped like ${this}
 static VARIABLE_MATCHER: &str = r"\$\{(\w+)\}";
@@ -37,7 +37,7 @@ impl VariableMap {
         // TODO: Load env variables from .env file
     }
 
-    pub fn replace_variables(&mut self, value: &str) -> Result<String, ConfigurationError> {
+    pub fn replace_variables(&mut self, value: &str) -> Result<String, CaptiError> {
         let var_regex = Regex::new(VARIABLE_MATCHER)?;
 
         let result = var_regex.replace_all(value, |captures: &Captures| {
@@ -51,28 +51,38 @@ impl VariableMap {
         Ok(result.to_string())
     }
 
-    pub fn extract_variables(
-        &mut self,
-        extractor: &str,
-        actual: &str,
-    ) -> Result<(), ConfigurationError> {
-        let var_regex = Regex::new(VARIABLE_MATCHER).unwrap();
+    pub fn extract_variables(&mut self, extractor: &str, actual: &str) -> Result<(), CaptiError> {
+        let var_regex = Regex::new(VARIABLE_MATCHER)?;
         let mut regex_pattern = String::from("^");
         let mut last_end = 0;
 
         for cap in var_regex.captures_iter(extractor) {
-            let (start, end) = (cap.get(0).unwrap().start(), cap.get(0).unwrap().end());
-            let variable_name = cap.get(1).unwrap().as_str();
+            let start = match cap.get(0) {
+                Some(start) => start.start(),
+                None => continue,
+            };
+
+            let end = match cap.get(0) {
+                Some(end) => end.end(),
+                None => continue,
+            };
+
+            let variable_name = match cap.get(1) {
+                Some(name) => name.as_str(),
+                None => continue,
+            };
 
             regex_pattern.push_str(&escape(&extractor[last_end..start]));
             regex_pattern.push_str(&format!("(?P<{}>.+?)", variable_name));
 
             last_end = end;
         }
+
         regex_pattern.push_str(&escape(&extractor[last_end..]));
         regex_pattern.push_str("$");
 
-        let full_regex = Regex::new(&regex_pattern).unwrap();
+        let full_regex = Regex::new(&regex_pattern)?;
+
         if let Some(caps) = full_regex.captures(actual) {
             for name in full_regex.capture_names().flatten() {
                 if let Some(value) = caps.name(name).map(|m| m.as_str().to_string()) {

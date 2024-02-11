@@ -18,6 +18,7 @@ tests:
 
   - test: "Sign up"
     description: "Signing up as a new user for the site"
+    print_response: true
     request:
       method: POST
       url: "${BASE_URL}/auth/signup"
@@ -29,10 +30,13 @@ tests:
         password: ${USER_PASSWORD}
     expect:
       status: 2xx
+      headers:
+        Content-Type: $regex /json/
       body:
         id: $exists
         email: ${USER_EMAIL}
         displayName: john-smith
+        password: $absent
     extract:
       body:
         id: ${USER_ID}

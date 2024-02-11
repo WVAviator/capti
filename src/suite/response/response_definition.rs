@@ -1,7 +1,9 @@
+use std::fmt;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    errors::config_error::ConfigurationError,
+    errors::CaptiError,
     matcher::{match_result::MatchResult, status_matcher::StatusMatcher, MatchCmp},
     suite::test::TestResult,
     variables::{variable_map::VariableMap, SuiteVariables},
@@ -59,10 +61,7 @@ impl ResponseDefinition {
 }
 
 impl SuiteVariables for ResponseDefinition {
-    fn populate_variables(
-        &mut self,
-        variables: &mut VariableMap,
-    ) -> Result<(), ConfigurationError> {
+    fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), CaptiError> {
         self.headers.populate_variables(variables)?;
         self.body.populate_variables(variables)?;
 
@@ -70,23 +69,29 @@ impl SuiteVariables for ResponseDefinition {
     }
 }
 
-// impl MatchCmp for ResponseDefinition {
-//   fn match_cmp(&self, other: &Self) -> MatchResult {
-//         match self.status.match_cmp(&other.status) {
-//             MatchResult::Matches => {}
-//             other => return other.with_context(format!("at compare ( {:#?}: {:#?} )", &self, &other)),
-//         }
+impl fmt::Display for ResponseDefinition {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, " ")?;
 
-//         match self.headers.match_cmp(&other.headers) {
-//             MatchResult::Matches => {}
-//             other => return other.with_context(format!("at compare ( {:#?}: {:#?} )", &self, &other)),
-//         }
+        if let Some(status) = &self.status {
+            writeln!(f, "  {}", status)?;
+        }
 
-//         match self.body.match_cmp(&other.body) {
-//             MatchResult::Matches => {}
-//             other => return other.with_context(format!("at compare ( {:#?}: {:#?} )", &self, &other)),
-//         }
+        if let Some(headers) = &self.headers {
+            writeln!(f, "  {}", headers)?;
+        }
 
-//         return MatchResult::Matches;
-//   }
-// }
+        if let Some(body) = &self.body {
+            if let Ok(json) = serde_json::to_string_pretty(&body) {
+                writeln!(f, "  Body:")?;
+                for line in json.lines() {
+                    writeln!(f, "    {}", line)?;
+                }
+            }
+        }
+
+        writeln!(f, " ")?;
+
+        Ok(())
+    }
+}

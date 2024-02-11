@@ -9,6 +9,7 @@ Capti is currently available as an NPM package, however Capti is framework-agnos
 Note: Support for other package managers and testing frameworks is under consideration - please see the notes below about [contributing](#contributing) if you have any suggestions or requests.
 
 To install Capti globally and use it anywhere:
+
 ```bash
 $ npm install -g capti
 ```
@@ -187,6 +188,7 @@ tests:
       body:
         id: $exists
         email: ${USER_EMAIL}
+        password: $absent
 ```
 
 Environment variables can be referenced in the same way. If a variable is set in both your local environment and in the `variables` section, the value specified in the `variables` section will take precedence.
@@ -253,6 +255,10 @@ Suites always run concurrently. You should not design your API tests to where an
 
 - `$exists` - This matcher is a catchall for verifying that a header or response body returned _something_. Literally anything will match except null, undefined, or nothing.
 
+- `$absent` - This matcher asserts that a certain property does not exist in the response. This is useful for verifying that endpoints returning user information don't accidentally include fields like `password` or other sensitive information.
+
+- `$empty` - This matcher is used for arrays and objects, and asserts that they are empty. Simply providing an empty field as a matcher will match _any_ object or array, so this matcher should be used instead.
+
 - `$regex` - This matcher allows you to specify a regex that should match the returned value. The regex must be defined between forward slashes, for example: `/[Hh]ello[,\ ]+[Ww]orld!?/`. Note that unless you include the start/end-of-string matchers `^ $`, this will match _any_ part of the returned value. Example:
 
 ```yaml
@@ -286,6 +292,17 @@ Note: Regex matchers only work on string values and will return false otherwise.
 ```
 Note: Technically you can even match values in nested arrays with `$includes $includes some-value`, since `$includes` is a valid matcher itself. `$includes $includes some-value` will check every inner array in an outer array (e.g. every cell in every row) to see if it contains a string `some-value`.
 
+### Other Features
+
+Here are some additional features of Capti that don't fit into any of the categories above.
+
+- For helpful debugging, you can set the property `print_response: true` on your tests, and the full response returned from your server will be printed in the console. 
+
+- To assert that a test _should fail_ rather than pass, you can set the property `should_fail: true` on the test. However, most of the time you should be able to get what you need using matchers and if not - make a suggestion!
+
+- Headers are matched case-insensitive. Newer recommendations in the HTTP specifications suggest using lowercase, and most frameworks will default to using lowercase. If you specify capitalized headers in your `expect` definition, they will still match their lowercase versions.
+
+
 ## Planned Development
 
 Capti is under active development and is not production ready. If you want to contribute, feel free to reach out (or just start opening issues and PRs, whatever).
@@ -295,8 +312,7 @@ Capti is under active development and is not production ready. If you want to co
 1. More matchers - such as "$key_exists some_key" for objects, "$starts_with some_prefix", "$contains some_value", etc.
 2. Testing endpoints under load, testing endpoint throttling or API limits.
 3. Support for specifying a local `.env` file for loading variables.
-4. An NPM package wrapper for easy installing in Node projects and globally.
-5. Comprehensive test reports with configurable information density.
+4. Support for printing more detailed results of testing to local files, as well as setting verbose log levels for more information.
 
 ### Stretch Features
 1. Support for other frameworks?
