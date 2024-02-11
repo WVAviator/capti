@@ -33,6 +33,7 @@ tests:
         id: $exists
         email: ${USER_EMAIL}
         displayName: john-smith
+        password: $absent
     extract:
       body:
         id: ${USER_ID}

@@ -7,6 +7,8 @@ pub enum Matcher {
     Exists,
     Regex(Regex),
     Includes(serde_json::Value),
+    Empty,
+    Absent,
 }
 
 impl Matcher {
@@ -28,6 +30,15 @@ impl Matcher {
                 }),
                 _ => false,
             },
+            Matcher::Empty => match value {
+                serde_json::Value::Array(arr) => arr.is_empty(),
+                serde_json::Value::Object(obj) => obj.is_empty(),
+                _ => false,
+            },
+            Matcher::Absent => match value {
+                serde_json::Value::Null => true,
+                _ => false,
+            },
         }
     }
 }
@@ -35,8 +46,9 @@ impl Matcher {
 impl From<&str> for Matcher {
     fn from(value: &str) -> Self {
         match value {
-            s if s.starts_with("\\$") => Matcher::Exact(s[1..].to_string()),
             "$exists" => Matcher::Exists,
+            "$empty" => Matcher::Empty,
+            "$absent" => Matcher::Absent,
             s if s.starts_with("$regex") => match extract_regex(s) {
                 Some(regex) => Matcher::Regex(regex),
                 None => Matcher::Exact(s.to_string()),
@@ -107,13 +119,6 @@ mod test {
     fn exists_nomatch_null() {
         let matches = Matcher::from("$exists").matches_value(&serde_json::Value::Null);
         assert!(!matches);
-    }
-
-    #[test]
-    fn ignores_escaped_matcher_symbol() {
-        let matches = Matcher::from("\\$exists")
-            .matches_value(&serde_json::Value::String(String::from("$exists")));
-        assert!(matches);
     }
 
     #[test]

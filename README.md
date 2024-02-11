@@ -187,6 +187,7 @@ tests:
       body:
         id: $exists
         email: ${USER_EMAIL}
+        password: $absent
 ```
 
 Environment variables can be referenced in the same way. If a variable is set in both your local environment and in the `variables` section, the value specified in the `variables` section will take precedence.
@@ -252,6 +253,10 @@ Suites always run concurrently. You should not design your API tests to where an
 ### More Matchers
 
 - `$exists` - This matcher is a catchall for verifying that a header or response body returned _something_. Literally anything will match except null, undefined, or nothing.
+
+- `$absent` - This matcher asserts that a certain property does not exist in the response. This is useful for verifying that endpoints returning user information don't accidentally include fields like `password` or other sensitive information.
+
+- `$empty` - This matcher is used for arrays and objects, and asserts that they are empty. Simply providing an empty field as a matcher will match _any_ object or array, so this matcher should be used instead.
 
 - `$regex` - This matcher allows you to specify a regex that should match the returned value. The regex must be defined between forward slashes, for example: `/[Hh]ello[,\ ]+[Ww]orld!?/`. Note that unless you include the start/end-of-string matchers `^ $`, this will match _any_ part of the returned value. Example:
 
