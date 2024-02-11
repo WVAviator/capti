@@ -1,13 +1,31 @@
 {
   "name": "capti",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "Capti is a comprehensive end-to-end REST API testing framework.",
+  "keywords": [
+    "testing",
+    "rest api",
+    "end-to-end",
+    "endpoint",
+    "http"
+  ],
+  "homepage": "https://github.com/WVAviator/capti",
+  "bugs": {
+    "url": "https://github.com/WVAviator/capti/issues",
+    "email": "wvaviator@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WVAviator/capti.git",
+    "directory": "npm"
+  },
   "type": "module",
   "node": ">=14.0.0",
   "bin": {
     "capti": "./bin/capti"
   },
   "scripts": {
+    "prepublishOnly": "cp ../README.md ./README.md",
     "postinstall": "node scripts/download.js"
   },
   "author": "wvaviator",
