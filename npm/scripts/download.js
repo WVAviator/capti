@@ -1,8 +1,16 @@
 import os from "os";
 import fs from "fs";
 import fsPromises from "fs/promises";
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-const BINARY_PATH = "./bin/capti";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const DIST_PATH = path.resolve(__dirname, "..", "dist");
+const PACKAGE_JSON_PATH = path.resolve(__dirname, "..", "package.json");
+const LOGS_PATH = path.resolve(__dirname, "..", "logs");
+
 const SUPPORTED_ARCHITECTURE = {
   linux: ["x64", "arm64"],
   darwin: ["x64", "arm64"],
@@ -11,17 +19,18 @@ const SUPPORTED_ARCHITECTURE = {
 
 const createLogger = () => {
   const date = new Date().toISOString();
-  const filename = `./logs/${date}.log`;
+  const filename = `${date}.log`;
+  const logPath = path.resolve(LOGS_PATH, filename);
 
   return (message) => {
-    fs.appendFileSync(filename, `${message}\n`);
+    fs.appendFileSync(logPath, `${message}\n`);
   };
 };
 
 const log = createLogger();
 
 const loadPackageJson = () => {
-  const data = fs.readFileSync("package.json", { encoding: "utf8" });
+  const data = fs.readFileSync(PACKAGE_JSON_PATH, { encoding: "utf8" });
   return JSON.parse(data);
 };
 
@@ -42,7 +51,8 @@ const download = async () => {
     process.exit(1);
   }
 
-  const binary = `capti-${platform}-${arch}`;
+  const extension = platform === "win32" ? ".exe" : "";
+  const binary = `capti-${platform}-${arch}${extension}`;
 
   log(`Downloading ${binary}`);
 
@@ -65,14 +75,15 @@ const download = async () => {
     const buffer = Buffer.from(arrayBuffer);
     log("Buffer created, writing to file...");
 
-    // fs.createWriteStream(BINARY_PATH).write(buffer);
-    await fsPromises.writeFile(BINARY_PATH, buffer);
+    const binaryPath = path.resolve(DIST_PATH, `capti${extension}`);
+
+    await fsPromises.writeFile(binaryPath, buffer);
     log("Buffer written to file, setting permissions...");
 
-    await fsPromises.chmod(BINARY_PATH, 0o755);
+    await fsPromises.chmod(binaryPath, 0o755);
     log("Permissions set.");
 
-    log(`Successfully downloaded to ${BINARY_PATH}`);
+    log(`Successfully downloaded to ${binaryPath}`);
   } catch (error) {
     log(`Failed to download: ${error.message}`);
     console.error("Failed to download/install:", error.message);

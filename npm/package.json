@@ -20,9 +20,9 @@
     "directory": "npm"
   },
   "type": "module",
-  "node": ">=14.0.0",
+  "node": ">=18.0.0",
   "bin": {
-    "capti": "./bin/capti"
+    "capti": "./bin/capti.js"
   },
   "scripts": {
     "prepublishOnly": "cp ../README.md ./README.md",
