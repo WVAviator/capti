@@ -1,10 +1,14 @@
 {
   "name": "capti",
-  "version": "0.1.0",
+  "version": "0.0.9",
   "description": "Capti is a comprehensive end-to-end REST API testing framework.",
-  "main": "index.js",
+  "type": "module",
+  "node": ">=14.0.0",
+  "bin": {
+    "capti": "./bin/capti"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "postinstall": "node scripts/download.js"
   },
   "author": "wvaviator",
   "license": "MIT"

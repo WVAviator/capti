@@ -1,8 +1,16 @@
 # Capti
 
-Capti is a lightweight end-to-end testing framework for REST APIs or for Contract Tests. 
+Capti is a lightweight end-to-end testing framework for REST APIs. Define your requests and expected response values in an intuitive YAML format, and streamline your endpoint testing.
 
 ## Basic Usage
+
+To run Capti after downloading, use the `capti` command with the `--path` or `-p` argument specifying the directory in which your tests are located.
+
+```bash
+$ capti -p ./my-tests
+```
+
+Note: If you omit the `--path` / `-p` argument, by default Capti will run from your current working directory. This could cause significant performance overhead, as Capti will search every single nested directory for YAML files and check each file to see if it's a Capti test. If you have a lot of directories in your project, this could be problematic.
 
 Test suites are defined in YAML format:
 
@@ -48,7 +56,7 @@ tests:
 
 Anything not specified in the `expect` section of a test that is present in the actual response will be ignored. An empty `expect` will match _any_ response and the test will always pass.
 
-See [More Matchers](#-more-matchers) in the section below.
+See [More Matchers](#more-matchers) in the section below.
 
 Note: If you want to assert that a test should fail, you can include an optional `should_fail: true` in the test definition.
 
@@ -84,7 +92,13 @@ Omitting the `wait_until` option means the script will run concurrently in the b
 
 ### Config
 
-If you need to run 'before_all' or 'after_all' setup scripts only once for an entire collection of test suites, you can define a `config.yaml` in your test directory with the same setup syntax pictured above. 
+If you need to run 'before_all' or 'after_all' setup scripts only once for an entire collection of test suites, you can define a `capti-config.yaml` in your test directory with the same setup syntax pictured above. 
+
+Optionally you can specify a custom config file and location by passing the path to your config as the `--config` or `-c` command line argument to Capti.
+
+```bash
+$ capti --path ./tests --config ./my-custom-config.yaml
+```
 
 Here is an example config that works with Docker Compose on Unix/Linux systems to check if the containers are already up and if not, starts them.
 
@@ -101,7 +115,7 @@ setup:
         fi
 ```
 
-Note: Running shell scripts before or after your tests is entirely optional - it's fine to start your server manually and then run Capti, just understand that if your server is not running, your tests will fail (obviously).
+Note: Running shell scripts before or after your tests is entirely optional - it's fine to start your server and/or database manually and then run Capti, just understand that if your server is not running, your tests will fail (obviously).
 
 ### Variables
 
