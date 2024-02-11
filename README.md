@@ -1,6 +1,6 @@
 # Capti
 
-Capti is a lightweight end-to-end testing framework for REST APIs or for Contract Tests. 
+Capti is a lightweight end-to-end testing framework for REST APIs. Define your requests and expected response values in an intuitive YAML format, and streamline your endpoint testing.
 
 ## Basic Usage
 
@@ -56,7 +56,7 @@ tests:
 
 Anything not specified in the `expect` section of a test that is present in the actual response will be ignored. An empty `expect` will match _any_ response and the test will always pass.
 
-See [More Matchers](#-more-matchers) in the section below.
+See [More Matchers](#more-matchers) in the section below.
 
 Note: If you want to assert that a test should fail, you can include an optional `should_fail: true` in the test definition.
 
