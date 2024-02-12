@@ -1,7 +1,7 @@
-const os = require("os");
-const fs = require("fs");
-const fsPromises = require("fs/promises");
-const path = require("path");
+const os = require("node:os");
+const fs = require("node:fs");
+const fsPromises = require("node:fs/promises");
+const path = require("node:path");
 const fetch = require("node-fetch");
 
 const DIST_PATH = path.resolve(__dirname, "..", "dist");
@@ -40,9 +40,7 @@ const download = async () => {
 
   log(`Detected platform: ${platform}, arch: ${arch}`);
 
-  if (
-    !SUPPORTED_ARCHITECTURE[platform].includes(arch)
-  ) {
+  if (!SUPPORTED_ARCHITECTURE[platform].includes(arch)) {
     log(`Unsupported platform and architecture: ${platform} ${arch}`);
     console.error("Unsupported platform and architecture:", platform, arch);
     process.exit(1);

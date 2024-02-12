@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
-const os = require("os");
-const path = require("path");
-const { spawn } = require("child_process");
+const os = require("node:os");
+const path = require("node:path");
+const { spawn } = require("node:child_process");
 
 const DIST_DIR = path.resolve(__dirname, "..", "dist");
 
