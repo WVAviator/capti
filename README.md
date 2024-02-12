@@ -2,6 +2,19 @@
 
 Capti is a lightweight end-to-end testing framework for REST APIs. Define your requests and expected response values in an intuitive YAML format, and streamline your endpoint testing.
 
+```yaml
+  - test: Get recipe
+    description: "Should be able to get recipe information"
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes/${RECIPE_ID}
+    expect:
+      status: 2xx
+      body:
+        id: ${RECIPE_ID}
+        name: Guacamole
+```
+
 ## Installation
 
 Capti is currently available as an NPM package, however Capti is framework-agnostic and can work with any REST APIs. The raw binaries are available on the [GitHub repo](https://github.com/WVAviator/capti/releases) if you prefer not to use NPM.
