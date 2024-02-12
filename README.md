@@ -13,6 +13,7 @@ Capti is a lightweight end-to-end testing framework for REST APIs. Define your r
       body:
         id: ${RECIPE_ID}
         name: Guacamole
+        ingredients: $exists
 ```
 
 ## Installation
