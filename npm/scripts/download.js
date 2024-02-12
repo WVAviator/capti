@@ -1,8 +1,11 @@
-const os = require("node:os");
-const fs = require("node:fs");
-const fsPromises = require("node:fs/promises");
-const path = require("node:path");
-const fetch = require("node-fetch");
+import os from "os";
+import fs from "fs";
+import fsPromises from "fs/promises";
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const DIST_PATH = path.resolve(__dirname, "..", "dist");
 const PACKAGE_JSON_PATH = path.resolve(__dirname, "..", "package.json");
@@ -31,7 +34,7 @@ const loadPackageJson = () => {
   return JSON.parse(data);
 };
 
-const { version } = loadPackageJson();
+const { version } = await loadPackageJson();
 log(`Loaded version ${version} from package.json`);
 
 const download = async () => {
@@ -40,7 +43,9 @@ const download = async () => {
 
   log(`Detected platform: ${platform}, arch: ${arch}`);
 
-  if (!SUPPORTED_ARCHITECTURE[platform].includes(arch)) {
+  if (
+    !SUPPORTED_ARCHITECTURE[platform].includes(arch)
+  ) {
     log(`Unsupported platform and architecture: ${platform} ${arch}`);
     console.error("Unsupported platform and architecture:", platform, arch);
     process.exit(1);

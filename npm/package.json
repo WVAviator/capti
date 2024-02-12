@@ -19,17 +19,15 @@
     "url": "git+https://github.com/WVAviator/capti.git",
     "directory": "npm"
   },
-  "node": ">=10.0.0",
+  "type": "module",
+  "node": ">=18.0.0",
   "bin": {
     "capti": "./bin/capti.js"
   },
   "scripts": {
     "prepublishOnly": "cp ../README.md ./README.md",
-    "postinstall": "node ./scripts/download.js"
+    "preinstall": "node ./scripts/download.js"
   },
   "author": "wvaviator",
-  "license": "MIT",
-  "dependencies": {
-    "node-fetch": "^2.7.0"
-  }
+  "license": "MIT"
 }
