@@ -40,12 +40,9 @@ Then edit your package.json scripts by adding a `test:capti` script:
 
 ```json
 {
-    ...
     "scripts": {
-        ...
         "test:capti": "capti --path './tests'"
     }
-    ...
 }
 ```
 
