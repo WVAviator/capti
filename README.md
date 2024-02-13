@@ -328,6 +328,7 @@ Capti is under active development and is not production ready. If you want to co
 ### Stretch Features
 1. Support for other frameworks?
 2. Coverage reports?
+3. Plugin API for custom matchers?
 3. Whatever you suggest or require for your project.
 
 ### Contributing
