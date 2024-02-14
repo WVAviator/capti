@@ -1,4 +1,7 @@
+use colored::Colorize;
 use regex::Regex;
+
+use crate::progress_println;
 
 use super::{MatchCmp, MatchResult};
 
@@ -9,6 +12,7 @@ pub enum Matcher {
     Includes(serde_json::Value),
     Empty,
     Absent,
+    Length(usize),
 }
 
 impl Matcher {
@@ -39,6 +43,12 @@ impl Matcher {
                 serde_json::Value::Null => true,
                 _ => false,
             },
+            Matcher::Length(length) => match value {
+                serde_json::Value::Array(arr) => arr.len().eq(length),
+                serde_json::Value::Object(obj) => obj.len().eq(length),
+                serde_json::Value::String(s) => s.len().eq(length),
+                _ => false,
+            },
         }
     }
 }
@@ -49,6 +59,14 @@ impl From<&str> for Matcher {
             "$exists" => Matcher::Exists,
             "$empty" => Matcher::Empty,
             "$absent" => Matcher::Absent,
+            s if s.starts_with("$length") => {
+                let length = value[8..].parse::<usize>().unwrap_or_else(|_| {
+                    progress_println!("{}: Invalid length matcher {}.", "Warning".yellow(), value);
+                    0
+                });
+
+                Matcher::Length(length)
+            }
             s if s.starts_with("$regex") => match extract_regex(s) {
                 Some(regex) => Matcher::Regex(regex),
                 None => Matcher::Exact(s.to_string()),
@@ -144,5 +162,15 @@ mod test {
         let re = Regex::new(r".*[Hh]ello!.*").unwrap();
         let hay = "Hello! How are you?";
         assert!(re.is_match(hay));
+    }
+
+    #[test]
+    fn test_length() {
+        let length_str = "$length 3";
+        let match_arr = serde_json::from_str("[1, 2, 3]").unwrap();
+        let matcher = Matcher::from(length_str);
+        let matches = matcher.matches_value(&match_arr);
+
+        assert!(matches);
     }
 }
