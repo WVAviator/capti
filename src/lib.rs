@@ -2,6 +2,7 @@ pub mod args;
 pub mod client;
 pub mod errors;
 pub mod formatting;
+pub mod m_value;
 pub mod matcher;
 pub mod progress;
 pub mod runner;
