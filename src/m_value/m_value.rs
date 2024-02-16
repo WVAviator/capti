@@ -6,9 +6,11 @@ use serde::{
 };
 use serde_yaml::Number;
 
+use crate::variables::SuiteVariables;
+
 use super::{m_map::Mapping, matcher_definition::MatcherDefintion};
 
-#[derive(Debug, Hash, PartialEq, Clone)]
+#[derive(Debug, Hash, Clone)]
 pub enum MValue {
     Null,
     Bool(bool),
@@ -135,6 +137,81 @@ impl<'de> Deserialize<'de> for MValue {
     }
 }
 
+impl PartialEq for MValue {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Bool(l0), Self::Bool(r0)) => l0 == r0,
+            (Self::Number(l0), Self::Number(r0)) => l0 == r0,
+            (Self::String(l0), Self::String(r0)) => l0 == r0,
+            (Self::Sequence(l0), Self::Sequence(r0)) => l0 == r0,
+            (Self::Mapping(l0), Self::Mapping(r0)) => l0 == r0,
+            (Self::Matcher(l0), other) => l0.is_match(&other),
+            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
+}
+
+impl SuiteVariables for MValue {
+    fn populate_variables(
+        &mut self,
+        variables: &mut crate::variables::variable_map::VariableMap,
+    ) -> Result<(), crate::errors::CaptiError> {
+        match self {
+            MValue::String(s) => {
+                *s = variables.replace_variables(&s)?;
+            }
+            MValue::Sequence(seq) => {
+                for value in seq {
+                    value.populate_variables(variables)?;
+                }
+            }
+            MValue::Mapping(mapping) => {
+                for value in mapping.values_mut() {
+                    value.populate_variables(variables)?;
+                }
+            }
+            _ => {}
+        }
+
+        Ok(())
+    }
+}
+
+impl fmt::Display for MValue {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MValue::Null => write!(f, "null")?,
+            MValue::Bool(b) => write!(f, "{}", b)?,
+            MValue::Number(n) => write!(f, "{}", n)?,
+            MValue::String(s) => write!(f, "\"{}\"", s)?,
+            MValue::Sequence(arr) => {
+                write!(f, "[")?;
+                for (i, value) in arr.iter().enumerate() {
+                    if i > 0 {
+                        write!(f, ", ")?;
+                    }
+                    write!(f, "{}", value)?;
+                }
+                write!(f, "]")?;
+            }
+            MValue::Mapping(m) => {
+                writeln!(f, "{{")?;
+                for (i, (key, value)) in m.iter().enumerate() {
+                    if i > 0 {
+                        writeln!(f, ", ")?;
+                    }
+                    write!(f, "{}: {}", key, value)?;
+                }
+                writeln!(f, " ")?;
+                write!(f, "}}")?;
+            }
+            MValue::Matcher(m) => write!(f, "{}", m)?,
+        }
+
+        Ok(())
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -215,5 +292,72 @@ mod test {
         let value = serde_yaml::from_str::<MValue>(yaml).unwrap();
 
         assert_eq!(expected, value);
+    }
+
+    #[test]
+    fn matcher_equality_after_deserialize() {
+        let yaml1 = r#"
+        hello: $exists
+        "#;
+
+        let yaml2 = r#"
+        hello: something 
+        "#;
+
+        let yaml3 = r#"
+        world: not hello
+        "#;
+
+        let yaml1 = serde_yaml::from_str::<MValue>(yaml1).unwrap();
+        let yaml2 = serde_yaml::from_str::<MValue>(yaml2).unwrap();
+        let yaml3 = serde_yaml::from_str::<MValue>(yaml3).unwrap();
+
+        assert_eq!(yaml1, yaml2);
+        assert_ne!(yaml1, yaml3);
+    }
+
+    #[test]
+    fn populates_variables_in_string() {
+        let mut variables = crate::variables::variable_map::VariableMap::new();
+        variables.insert("HELLO", "hi");
+        let mut value = MValue::String("Say ${HELLO}!".to_string());
+        value.populate_variables(&mut variables).unwrap();
+        assert_eq!(value, MValue::String("Say hi!".to_string()));
+    }
+
+    #[test]
+    fn populates_variables_nested() {
+        let mut variables = crate::variables::variable_map::VariableMap::new();
+        variables.insert("HELLO", "hi");
+        let mut value = MValue::Mapping(Mapping::from(vec![
+            (
+                MValue::String("hello".to_string()),
+                MValue::String("Say ${HELLO}!".to_string()),
+            ),
+            (
+                MValue::String("world".to_string()),
+                MValue::Sequence(vec![
+                    MValue::String("Say ${HELLO}!".to_string()),
+                    MValue::String("Say ${HELLO}!".to_string()),
+                ]),
+            ),
+        ]));
+        value.populate_variables(&mut variables).unwrap();
+        assert_eq!(
+            value,
+            MValue::Mapping(Mapping::from(vec![
+                (
+                    MValue::String("hello".to_string()),
+                    MValue::String("Say hi!".to_string()),
+                ),
+                (
+                    MValue::String("world".to_string()),
+                    MValue::Sequence(vec![
+                        MValue::String("Say hi!".to_string()),
+                        MValue::String("Say hi!".to_string()),
+                    ]),
+                ),
+            ]))
+        );
     }
 }

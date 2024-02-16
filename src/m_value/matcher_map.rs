@@ -2,7 +2,7 @@ use std::{collections::HashMap, ops::Deref};
 
 use lazy_static::lazy_static;
 
-use super::{match_processor::MatchProcessor, std_matchers::exists::Exists};
+use super::{match_processor::MatchProcessor, std_matchers::*};
 
 lazy_static! {
     static ref MATCHER_MAP: MatcherMap = MatcherMap::initialize();
@@ -15,6 +15,8 @@ impl MatcherMap {
         let mut map = MatcherMap(HashMap::new());
 
         map.insert_mp(Exists::new());
+        map.insert_mp(Regex::new());
+        map.insert_mp(Absent::new());
 
         map
     }

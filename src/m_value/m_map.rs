@@ -10,7 +10,7 @@ use serde::{Deserialize, Deserializer};
 
 use super::m_value::MValue;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone)]
 pub struct Mapping {
     map: IndexMap<MValue, MValue>,
 }
@@ -30,6 +30,18 @@ impl Mapping {
     }
 }
 
+impl PartialEq for Mapping {
+    fn eq(&self, other: &Self) -> bool {
+        for (k, v) in &self.map {
+            if v != other.get(k).unwrap_or(&MValue::Null) {
+                return false;
+            }
+        }
+
+        true
+    }
+}
+
 impl Hash for Mapping {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         let mut xor = 0;
@@ -40,6 +52,16 @@ impl Hash for Mapping {
             xor ^= hasher.finish();
         }
         xor.hash(state);
+    }
+}
+
+impl From<Vec<(MValue, MValue)>> for Mapping {
+    fn from(vec: Vec<(MValue, MValue)>) -> Self {
+        let mut map = IndexMap::new();
+        for (k, v) in vec {
+            map.insert(k, v);
+        }
+        Mapping { map }
     }
 }
 
