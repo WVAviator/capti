@@ -1,6 +1,7 @@
 use crate::m_value::{m_value::MValue, match_processor::MatchProcessor};
 
-#[derive(Default)]
+/// The $exists matcher returns true if something exists at the expected value.
+/// Returns false if no value is found or if the value is null.
 pub struct Exists;
 
 impl Exists {

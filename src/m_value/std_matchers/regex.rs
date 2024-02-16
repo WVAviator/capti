@@ -3,7 +3,10 @@ use crate::{
     progress_println,
 };
 
-#[derive(Default)]
+/// The $regex matcher takes in a regex wrapped by '/' characters, and determines whether a match
+/// can be found in the provided value.
+/// Returns true if a match is found anywhere in the value.
+/// Returns false if no match is found.
 pub struct Regex;
 
 impl Regex {

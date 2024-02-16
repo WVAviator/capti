@@ -1,6 +1,7 @@
 use crate::m_value::{m_value::MValue, match_processor::MatchProcessor};
 
-#[derive(Default)]
+/// The absent matcher returns true if the expected value is missing or null.
+/// Returns false if any other kind of value is found.
 pub struct Absent;
 
 impl Absent {

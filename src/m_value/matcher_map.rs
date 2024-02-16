@@ -17,6 +17,9 @@ impl MatcherMap {
         map.insert_mp(Exists::new());
         map.insert_mp(Regex::new());
         map.insert_mp(Absent::new());
+        map.insert_mp(Empty::new());
+        map.insert_mp(Includes::new());
+        map.insert_mp(Length::new());
 
         map
     }
