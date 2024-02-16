@@ -1,5 +1,6 @@
-use super::{m_value::MValue, match_processor::MatchProcessor, matcher_map::MatcherMap};
+use super::{m_value::MValue, matcher_map::MatcherMap};
 
+#[derive(Debug, Clone, PartialEq, Hash)]
 pub struct MatcherDefintion {
     match_key: String,
     args: MValue,
