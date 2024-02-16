@@ -163,7 +163,8 @@ impl PartialEq for MValue {
             (Self::Sequence(l0), Self::Sequence(r0)) => l0 == r0,
             (Self::Mapping(l0), Self::Mapping(r0)) => l0 == r0,
             (Self::Matcher(l0), other) => l0.is_match(&other),
-            _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+            (Self::Null, _) => true,
+            _ => false,
         }
     }
 }
@@ -184,18 +185,16 @@ impl SuiteVariables for MValue {
     ) -> Result<(), crate::errors::CaptiError> {
         match self {
             MValue::String(s) => {
-                *s = variables.replace_variables(&s)?;
+                let new_s = variables.replace_variables(&s)?;
+                *s = new_s;
             }
             MValue::Sequence(seq) => {
                 for value in seq {
                     value.populate_variables(variables)?;
                 }
             }
-            MValue::Mapping(mapping) => {
-                for value in mapping.values_mut() {
-                    value.populate_variables(variables)?;
-                }
-            }
+            MValue::Mapping(mapping) => mapping.populate_variables(variables)?,
+            MValue::Matcher(m) => m.populate_variables(variables)?,
             _ => {}
         }
 

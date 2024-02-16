@@ -154,7 +154,7 @@ impl fmt::Display for FailureReport {
 mod test {
 
     use crate::{
-        m_value::{m_value::MValue, status_matcher::StatusMatcher},
+        m_value::m_value::MValue,
         suite::response::{response_headers::ResponseHeaders, status::Status},
     };
 
@@ -163,13 +163,13 @@ mod test {
     #[test]
     fn test_compare_optional() {
         let matcher = ResponseDefinition {
-            headers: None,
-            body: None,
+            headers: ResponseHeaders::default(),
+            body: MValue::default(),
             status: Status::none(),
         };
         let response = ResponseDefinition {
-            headers: Some(ResponseHeaders::default()),
-            body: Some(serde_json::from_str::<MValue>(r#"{"test": "test"}"#).unwrap()),
+            headers: ResponseHeaders::default(),
+            body: serde_json::from_str::<MValue>(r#"{"test": "test"}"#).unwrap(),
             status: Status::from(200),
         };
 
@@ -179,13 +179,13 @@ mod test {
     #[test]
     fn test_compare_status_matches() {
         let matcher = ResponseDefinition {
-            headers: None,
-            body: None,
+            headers: ResponseHeaders::default(),
+            body: MValue::Null,
             status: Status::from("2xx"),
         };
         let response = ResponseDefinition {
-            headers: None,
-            body: None,
+            headers: ResponseHeaders::default(),
+            body: MValue::Null,
             status: Status::from(200),
         };
 

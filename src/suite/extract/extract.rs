@@ -10,7 +10,8 @@ use crate::{
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct ResponseExtractor {
     body: MValue,
-    headers: Option<ResponseHeaders>,
+    #[serde(default)]
+    headers: ResponseHeaders,
 }
 
 impl ResponseExtractor {
@@ -19,42 +20,27 @@ impl ResponseExtractor {
         response: &ResponseDefinition,
         variables: &mut VariableMap,
     ) -> Result<(), CaptiError> {
-        let response_body = match &response.body {
-            Some(body) => body,
-            None => &MValue::Null,
-        };
+        body_extract(&self.body, &response.body, variables)?;
 
-        body_extract(&self.body, response_body, variables)?;
-
-        if let Some(headers) = &self.headers {
-            for (key, value) in headers.iter() {
-                let value = match value {
-                    MValue::String(s) => s,
-                    _ => {
-                        return Err(CaptiError::extract_error(format!(
-                            "Invalid value for header {} in response.",
-                            &key
-                        )))
-                    }
-                };
-                match &response.headers {
-                    Some(response_headers) => match response_headers.get(key) {
-                        Some(MValue::String(header_value)) => {
-                            variables.extract_variables(value, header_value)?;
-                        }
-                        _ => {
-                            return Err(CaptiError::extract_error(format!(
-                                "Missing header {} in response.",
-                                &key
-                            )))
-                        }
-                    },
-                    None => {
-                        return Err(CaptiError::extract_error(format!(
-                            "Missing header {} in response.",
-                            &key
-                        )))
-                    }
+        for (key, value) in self.headers.iter() {
+            let value = match value {
+                MValue::String(s) => s,
+                _ => {
+                    return Err(CaptiError::extract_error(format!(
+                        "Invalid value for header {} in response.",
+                        &key
+                    )))
+                }
+            };
+            match &response.headers.get(key) {
+                Some(MValue::String(header_value)) => {
+                    variables.extract_variables(value, header_value)?;
+                }
+                _ => {
+                    return Err(CaptiError::extract_error(format!(
+                        "Missing header {} in response.",
+                        &key
+                    )))
                 }
             }
         }

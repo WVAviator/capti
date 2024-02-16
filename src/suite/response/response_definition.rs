@@ -14,8 +14,10 @@ use super::{response_headers::ResponseHeaders, status::Status};
 #[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct ResponseDefinition {
     pub status: Status,
-    pub headers: Option<ResponseHeaders>,
-    pub body: Option<MValue>,
+    #[serde(default)]
+    pub headers: ResponseHeaders,
+    #[serde(default)]
+    pub body: MValue,
 }
 
 impl ResponseDefinition {
@@ -23,14 +25,10 @@ impl ResponseDefinition {
         let status = Status::from(StatusMatcher::Exact(response.status().as_u16()));
 
         let headers = ResponseHeaders::from(response.headers());
-        let headers = match headers.len() {
-            0 => None,
-            _ => Some(headers),
-        };
 
         let body = match response.json::<MValue>().await {
-            Ok(body) => Some(body),
-            Err(_) => None,
+            Ok(body) => body,
+            Err(_) => MValue::Null,
         };
 
         ResponseDefinition {
@@ -72,16 +70,12 @@ impl fmt::Display for ResponseDefinition {
 
         writeln!(f, "  {}", self.status)?;
 
-        if let Some(headers) = &self.headers {
-            writeln!(f, "  {}", headers)?;
-        }
+        writeln!(f, "  {}", self.headers)?;
 
-        if let Some(body) = &self.body {
-            if let Ok(json) = serde_json::to_string_pretty(&body) {
-                writeln!(f, "  Body:")?;
-                for line in json.lines() {
-                    writeln!(f, "    {}", line)?;
-                }
+        if let Ok(json) = serde_json::to_string_pretty(&self.body) {
+            writeln!(f, "  Body:")?;
+            for line in json.lines() {
+                writeln!(f, "    {}", line)?;
             }
         }
 

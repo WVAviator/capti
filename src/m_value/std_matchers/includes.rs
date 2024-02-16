@@ -18,7 +18,7 @@ impl MatchProcessor for Includes {
 
     fn is_match(&self, args: &MValue, value: &MValue) -> bool {
         match value {
-            MValue::Sequence(arr) => arr.iter().any(|i| i == args),
+            MValue::Sequence(arr) => arr.iter().any(|i| args.eq(i)),
             _ => false,
         }
     }

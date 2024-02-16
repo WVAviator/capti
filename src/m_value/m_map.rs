@@ -8,6 +8,12 @@ use std::{
 use indexmap::IndexMap;
 use serde::{Deserialize, Deserializer, Serialize};
 
+use crate::{
+    errors::CaptiError,
+    progress_println,
+    variables::{variable_map::VariableMap, SuiteVariables},
+};
+
 use super::m_value::MValue;
 
 #[derive(Debug, Default, Clone)]
@@ -30,6 +36,15 @@ impl Mapping {
     }
 }
 
+impl SuiteVariables for Mapping {
+    fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), CaptiError> {
+        for value in self.map.values_mut() {
+            value.populate_variables(variables)?;
+        }
+        Ok(())
+    }
+}
+
 impl Serialize for Mapping {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -47,7 +62,14 @@ impl Serialize for Mapping {
 impl PartialEq for Mapping {
     fn eq(&self, other: &Self) -> bool {
         for (k, v) in &self.map {
-            if v != other.get(k).unwrap_or(&MValue::Null) {
+            let other_v = other.get(k).unwrap_or(&MValue::Null);
+            if v != other_v {
+                progress_println!(
+                    "Mismatch at key {}:\n  expected: {}\n  found: {}",
+                    &k,
+                    &v,
+                    &other_v
+                );
                 return false;
             }
         }
