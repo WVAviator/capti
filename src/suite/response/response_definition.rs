@@ -1,26 +1,26 @@
 use std::fmt;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::{
     errors::CaptiError,
-    matcher::{match_result::MatchResult, status_matcher::StatusMatcher, MatchCmp},
+    m_value::{m_value::MValue, status_matcher::StatusMatcher},
     suite::test::TestResult,
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
-use super::response_headers::ResponseHeaders;
+use super::{response_headers::ResponseHeaders, status::Status};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct ResponseDefinition {
-    pub status: Option<StatusMatcher>,
+    pub status: Status,
     pub headers: Option<ResponseHeaders>,
-    pub body: Option<serde_json::Value>,
+    pub body: Option<MValue>,
 }
 
 impl ResponseDefinition {
     pub async fn from_response(response: reqwest::Response) -> Self {
-        let status = Some(StatusMatcher::Exact(response.status().as_u16()));
+        let status = Status::from(StatusMatcher::Exact(response.status().as_u16()));
 
         let headers = ResponseHeaders::from(response.headers());
         let headers = match headers.len() {
@@ -28,7 +28,7 @@ impl ResponseDefinition {
             _ => Some(headers),
         };
 
-        let body = match response.json::<serde_json::Value>().await {
+        let body = match response.json::<MValue>().await {
             Ok(body) => Some(body),
             Err(_) => None,
         };
@@ -41,19 +41,16 @@ impl ResponseDefinition {
     }
 
     pub fn compare(&self, other: &ResponseDefinition) -> TestResult {
-        match self.status.match_cmp(&other.status) {
-            MatchResult::Matches => {}
-            other => return TestResult::fail("Status does not match.", &other),
+        if !self.status.eq(&other.status) {
+            return TestResult::fail("Status does not match.");
         }
 
-        match self.headers.match_cmp(&other.headers) {
-            MatchResult::Matches => {}
-            other => return TestResult::fail("Headers do not match.", &other),
+        if !self.headers.eq(&other.headers) {
+            return TestResult::fail("Headers do not match.");
         }
 
-        match self.body.match_cmp(&other.body) {
-            MatchResult::Matches => {}
-            other => return TestResult::fail("Body does not match.", &other),
+        if !self.body.eq(&other.body) {
+            return TestResult::fail("Body does not match.");
         }
 
         return TestResult::Passed;
@@ -73,9 +70,7 @@ impl fmt::Display for ResponseDefinition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, " ")?;
 
-        if let Some(status) = &self.status {
-            writeln!(f, "  {}", status)?;
-        }
+        writeln!(f, "  {}", self.status)?;
 
         if let Some(headers) = &self.headers {
             writeln!(f, "  {}", headers)?;

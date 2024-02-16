@@ -1,11 +1,22 @@
 use std::fmt;
 
+use serde::Serialize;
+
 use super::{m_value::MValue, matcher_map::MatcherMap};
 
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct MatcherDefintion {
     match_key: String,
     args: MValue,
+}
+
+impl Serialize for MatcherDefintion {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(&format!("{} {}", self.match_key, self.args))
+    }
 }
 
 impl MatcherDefintion {

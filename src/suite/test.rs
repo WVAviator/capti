@@ -2,13 +2,12 @@ use std::fmt::{self, Debug};
 
 use colored::Colorize;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::{
     client::Client,
     errors::CaptiError,
     formatting::Heading,
-    matcher::match_result::MatchResult,
     progress::Spinner,
     progress_println,
     variables::{variable_map::VariableMap, SuiteVariables},
@@ -19,7 +18,7 @@ use super::{
     response::ResponseDefinition,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct TestDefinition {
     pub test: String,
     pub description: Option<String>,
@@ -70,10 +69,9 @@ impl TestDefinition {
         let test_result = self.expect.compare(&response);
 
         let test_result = match (test_result, self.should_fail) {
-            (TestResult::Passed, true) => TestResult::Failed(FailureReport::new(
-                "Expected failure, but test passed.",
-                MatchResult::Matches,
-            )),
+            (TestResult::Passed, true) => {
+                TestResult::Failed(FailureReport::new("Expected failure, but test passed."))
+            }
             (TestResult::Failed(_), true) => TestResult::Passed,
             (result, _) => result,
         };
@@ -111,8 +109,8 @@ pub enum TestResult {
 }
 
 impl TestResult {
-    pub fn fail(message: impl Into<String>, match_result: &MatchResult) -> Self {
-        TestResult::Failed(FailureReport::new(message, match_result.clone()))
+    pub fn fail(message: impl Into<String>) -> Self {
+        TestResult::Failed(FailureReport::new(message))
     }
 }
 
@@ -134,14 +132,12 @@ impl Into<String> for &TestResult {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FailureReport {
     message: String,
-    match_result: MatchResult,
 }
 
 impl FailureReport {
-    pub fn new(message: impl Into<String>, match_result: MatchResult) -> Self {
+    pub fn new(message: impl Into<String>) -> Self {
         FailureReport {
             message: message.into(),
-            match_result,
         }
     }
 }
@@ -149,7 +145,6 @@ impl FailureReport {
 impl fmt::Display for FailureReport {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}", self.message)?;
-        writeln!(f, "{}", self.match_result)?;
 
         Ok(())
     }
@@ -158,10 +153,9 @@ impl fmt::Display for FailureReport {
 #[cfg(test)]
 mod test {
 
-    use serde_json::json;
-
     use crate::{
-        matcher::status_matcher::StatusMatcher, suite::response::response_headers::ResponseHeaders,
+        m_value::{m_value::MValue, status_matcher::StatusMatcher},
+        suite::response::{response_headers::ResponseHeaders, status::Status},
     };
 
     use super::*;
@@ -171,12 +165,12 @@ mod test {
         let matcher = ResponseDefinition {
             headers: None,
             body: None,
-            status: None,
+            status: Status::none(),
         };
         let response = ResponseDefinition {
             headers: Some(ResponseHeaders::default()),
-            body: Some(json!({ "test": "test" })),
-            status: Some(StatusMatcher::Exact(200)),
+            body: Some(serde_json::from_str::<MValue>(r#"{"test": "test"}"#).unwrap()),
+            status: Status::from(200),
         };
 
         assert_eq!(matcher.compare(&response), TestResult::Passed);
@@ -187,12 +181,12 @@ mod test {
         let matcher = ResponseDefinition {
             headers: None,
             body: None,
-            status: Some(StatusMatcher::Class(String::from("2xx"))),
+            status: Status::from("2xx"),
         };
         let response = ResponseDefinition {
             headers: None,
             body: None,
-            status: Some(StatusMatcher::Exact(200)),
+            status: Status::from(200),
         };
 
         assert_eq!(matcher.compare(&response), TestResult::Passed);

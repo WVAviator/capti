@@ -6,11 +6,11 @@ use std::{
 };
 
 use indexmap::IndexMap;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use super::m_value::MValue;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct Mapping {
     map: IndexMap<MValue, MValue>,
 }
@@ -30,6 +30,20 @@ impl Mapping {
     }
 }
 
+impl Serialize for Mapping {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        use serde::ser::SerializeMap;
+        let mut map = serializer.serialize_map(Some(self.map.len()))?;
+        for (k, v) in &self.map {
+            map.serialize_entry(k, v)?;
+        }
+        map.end()
+    }
+}
+
 impl PartialEq for Mapping {
     fn eq(&self, other: &Self) -> bool {
         for (k, v) in &self.map {
@@ -39,6 +53,22 @@ impl PartialEq for Mapping {
         }
 
         true
+    }
+}
+
+impl PartialEq<Mapping> for Option<Mapping> {
+    fn eq(&self, other: &Mapping) -> bool {
+        match self {
+            Some(mapping) => mapping.eq(other),
+            None => true,
+        }
+    }
+}
+
+impl FromIterator<(MValue, MValue)> for Mapping {
+    fn from_iter<T: IntoIterator<Item = (MValue, MValue)>>(iter: T) -> Self {
+        let map = iter.into_iter().collect::<IndexMap<MValue, MValue>>();
+        Mapping { map }
     }
 }
 

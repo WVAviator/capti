@@ -2,7 +2,7 @@ use std::fmt;
 
 use serde::{
     de::{self, MapAccess, SeqAccess, Visitor},
-    Deserialize, Deserializer,
+    Deserialize, Deserializer, Serialize,
 };
 use serde_yaml::Number;
 
@@ -24,6 +24,23 @@ pub enum MValue {
 impl Default for MValue {
     fn default() -> Self {
         MValue::Null
+    }
+}
+
+impl Serialize for MValue {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::ser::Serializer,
+    {
+        match self {
+            MValue::Null => serializer.serialize_unit(),
+            MValue::Bool(b) => serializer.serialize_bool(*b),
+            MValue::Number(n) => n.serialize(serializer),
+            MValue::String(s) => serializer.serialize_str(s),
+            MValue::Sequence(arr) => arr.serialize(serializer),
+            MValue::Mapping(m) => m.serialize(serializer),
+            MValue::Matcher(m) => m.serialize(serializer),
+        }
     }
 }
 
@@ -147,6 +164,15 @@ impl PartialEq for MValue {
             (Self::Mapping(l0), Self::Mapping(r0)) => l0 == r0,
             (Self::Matcher(l0), other) => l0.is_match(&other),
             _ => core::mem::discriminant(self) == core::mem::discriminant(other),
+        }
+    }
+}
+
+impl PartialEq<MValue> for Option<MValue> {
+    fn eq(&self, other: &MValue) -> bool {
+        match self {
+            Some(value) => value == other,
+            None => true,
         }
     }
 }

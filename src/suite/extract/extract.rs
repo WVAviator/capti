@@ -1,14 +1,15 @@
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::{
     errors::CaptiError,
+    m_value::m_value::MValue,
     suite::response::{response_headers::ResponseHeaders, ResponseDefinition},
     variables::variable_map::VariableMap,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct ResponseExtractor {
-    body: serde_json::Value,
+    body: MValue,
     headers: Option<ResponseHeaders>,
 }
 
@@ -20,19 +21,28 @@ impl ResponseExtractor {
     ) -> Result<(), CaptiError> {
         let response_body = match &response.body {
             Some(body) => body,
-            None => &serde_json::Value::Null,
+            None => &MValue::Null,
         };
 
         body_extract(&self.body, response_body, variables)?;
 
         if let Some(headers) = &self.headers {
             for (key, value) in headers.iter() {
+                let value = match value {
+                    MValue::String(s) => s,
+                    _ => {
+                        return Err(CaptiError::extract_error(format!(
+                            "Invalid value for header {} in response.",
+                            &key
+                        )))
+                    }
+                };
                 match &response.headers {
                     Some(response_headers) => match response_headers.get(key) {
-                        Some(header_value) => {
+                        Some(MValue::String(header_value)) => {
                             variables.extract_variables(value, header_value)?;
                         }
-                        None => {
+                        _ => {
                             return Err(CaptiError::extract_error(format!(
                                 "Missing header {} in response.",
                                 &key
@@ -54,14 +64,14 @@ impl ResponseExtractor {
 }
 
 fn body_extract(
-    left: &serde_json::Value,
-    right: &serde_json::Value,
+    left: &MValue,
+    right: &MValue,
     variables: &mut VariableMap,
 ) -> Result<(), CaptiError> {
     match (left, right) {
-        (serde_json::Value::Null, _) => {}
-        (serde_json::Value::Object(left), serde_json::Value::Object(right)) => {
-            for (key, value) in left {
+        (MValue::Null, _) => {}
+        (MValue::Mapping(left), MValue::Mapping(right)) => {
+            for (key, value) in left.iter() {
                 match right.get(key) {
                     Some(right_value) => body_extract(value, right_value, variables)?,
                     None => {
@@ -73,12 +83,12 @@ fn body_extract(
                 }
             }
         }
-        (serde_json::Value::Array(left), serde_json::Value::Array(right)) => {
+        (MValue::Sequence(left), MValue::Sequence(right)) => {
             for (i, value) in left.iter().enumerate() {
                 body_extract(value, &right[i], variables)?;
             }
         }
-        (serde_json::Value::String(left), serde_json::Value::String(right)) => {
+        (MValue::String(left), MValue::String(right)) => {
             variables.extract_variables(left, right).map_err(|_| {
                 CaptiError::extract_error(format!(
                     "Failed to extract variables from '{}' using matcher '{}'.",
