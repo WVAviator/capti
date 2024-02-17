@@ -53,6 +53,12 @@ impl MMatch<MValue> for MatcherDefinition {
     }
 }
 
+impl Into<serde_json::Value> for MatcherDefinition {
+    fn into(self) -> serde_json::Value {
+        serde_json::Value::String(self.to_string())
+    }
+}
+
 impl SuiteVariables for MatcherDefinition {
     fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), CaptiError> {
         self.args.populate_variables(variables)?;

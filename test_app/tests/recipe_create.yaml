@@ -4,6 +4,31 @@ variables:
   BASE_URL: http://localhost:3000
   USER_EMAIL: recipe@tests.com
   USER_PASSWORD: hG98s4%%phG
+  USER_BODY_EXPECT:
+    id: $exists
+    email: ${USER_EMAIL}
+    displayName: john-smith
+  RECIPE:
+    name: Guacamole
+    description: >
+      A delicious classic guacamole recipe.
+    time: 10
+    servings: 6
+    ingredients:
+      - 3 avocados
+      - 1/2 red onion
+      - 1 lime
+      - 1 green bell pepper
+      - 1 jalapeno pepper
+      - 1/2 tsp cumin
+      - 1/2 tsp salt
+      - 1/2 tsp red pepper
+    instructions: [
+      "Roughly chop onion, green pepper, and jalapeno and add to food processor. Pulse 2-3 times.",
+      "Cut and remove seeds from avocados, use spoon to scoop and mash in a bowl.",
+      "Mix in the vegetables, seasonings, and lime juice squeezed from a fresh lime." ]
+
+
 
 tests:
   - test: Create new user
@@ -18,10 +43,7 @@ tests:
         password: ${USER_PASSWORD}
     expect:
       status: 2xx
-      body:
-        id: $exists
-        email: ${USER_EMAIL}
-        displayName: john-smith
+      body: ${USER_BODY_EXPECT}
     extract:
       body:
         id: ${USER_ID}
@@ -45,25 +67,7 @@ tests:
       url: ${BASE_URL}/recipes
       headers:
         Content-Type: application/json
-      body:
-        name: Guacamole
-        description: >
-          A delicious classic guacamole recipe.
-        time: 10
-        servings: 6
-        ingredients:
-          - 3 avocados
-          - 1/2 red onion
-          - 1 lime
-          - 1 green bell pepper
-          - 1 jalapeno pepper
-          - 1/2 tsp cumin
-          - 1/2 tsp salt
-          - 1/2 tsp red pepper
-        instructions: [
-          "Roughly chop onion, green pepper, and jalapeno and add to food processor. Pulse 2-3 times.",
-          "Cut and remove seeds from avocados, use spoon to scoop and mash in a bowl.",
-          "Mix in the vegetables, seasonings, and lime juice squeezed from a fresh lime." ]
+      body: ${RECIPE}
     expect:
       status: 2xx
       body:
@@ -81,9 +85,7 @@ tests:
       url: ${BASE_URL}/recipes/${RECIPE_ID}
     expect:
       status: 2xx
-      body:
-        id: ${RECIPE_ID}
-        name: Guacamole
+      body: ${RECIPE}
 
   - test: Recipe in list
     description: Recipe should be visible when listing all recipes
@@ -92,8 +94,7 @@ tests:
       url: ${BASE_URL}/recipes
     expect:
       status: 2xx
-      body: [1, 2, 3]
-      # body: '$includes { "id": "${RECIPE_ID}" }'
+      body: '$includes { "id": "${RECIPE_ID}" }'
 
   - test: User only has one recipe
     description: User should only show one recipe in their list

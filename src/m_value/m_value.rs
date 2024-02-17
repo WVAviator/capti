@@ -228,9 +228,9 @@ impl SuiteVariables for MValue {
         variables: &mut crate::variables::variable_map::VariableMap,
     ) -> Result<(), crate::errors::CaptiError> {
         match self {
-            MValue::String(s) => {
-                let new_s = variables.replace_variables(&s)?;
-                *s = new_s;
+            MValue::String(_) => {
+                let new_s = variables.replace_variables(self.clone())?;
+                *self = new_s;
             }
             MValue::Sequence(seq) => {
                 for value in seq.iter_mut() {
@@ -270,6 +270,40 @@ impl fmt::Display for MValue {
         }
 
         Ok(())
+    }
+}
+
+impl Into<MValue> for &str {
+    fn into(self) -> MValue {
+        self.to_string().into()
+    }
+}
+
+impl Into<MValue> for String {
+    fn into(self) -> MValue {
+        match MatcherDefinition::try_from(self.as_str()) {
+            Ok(matcher) => MValue::Matcher(Box::new(matcher)),
+            Err(_) => MValue::String(self),
+        }
+    }
+}
+
+impl Into<serde_json::Value> for MValue {
+    fn into(self) -> serde_json::Value {
+        match self {
+            MValue::Null => serde_json::Value::Null,
+            MValue::Bool(b) => serde_json::Value::Bool(b),
+            MValue::Number(n) => {
+                let n_json = serde_json::to_string(&n).unwrap_or("0".into());
+                let n =
+                    serde_json::to_value(&n_json).unwrap_or(serde_json::Value::Number(0.into()));
+                n
+            }
+            MValue::String(s) => serde_json::Value::String(s),
+            MValue::Sequence(arr) => arr.into(),
+            MValue::Mapping(m) => m.into(),
+            MValue::Matcher(m) => m.to_string().into(),
+        }
     }
 }
 

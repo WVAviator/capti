@@ -26,6 +26,12 @@ impl DerefMut for MSequence {
     }
 }
 
+impl Into<serde_json::Value> for MSequence {
+    fn into(self) -> serde_json::Value {
+        serde_json::Value::Array(self.0.into_iter().map(Into::into).collect())
+    }
+}
+
 impl MMatch for MSequence {
     fn matches(&self, other: &Self) -> bool {
         return self.0.iter().zip(other.0.iter()).all(|(a, b)| a.matches(b));

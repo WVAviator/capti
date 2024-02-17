@@ -1,4 +1,3 @@
-pub mod serde;
 pub mod variable_map;
 pub mod variables;
 

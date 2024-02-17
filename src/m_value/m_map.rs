@@ -58,6 +58,17 @@ impl fmt::Display for MMap {
     }
 }
 
+impl Into<serde_json::Value> for MMap {
+    fn into(self) -> serde_json::Value {
+        serde_json::Value::Object(
+            self.map
+                .into_iter()
+                .map(|(k, v)| (k.to_string(), v.into()))
+                .collect(),
+        )
+    }
+}
+
 impl Serialize for MMap {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
