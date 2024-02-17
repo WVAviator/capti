@@ -5,9 +5,9 @@ use std::{
 
 use serde::Deserialize;
 
-use super::m_value::MValue;
+use super::{m_match::MMatch, m_value::MValue};
 
-#[derive(Debug, Default, Clone, Hash, Deserialize)]
+#[derive(Debug, Default, Clone, Hash, PartialEq, Deserialize)]
 #[serde(transparent)]
 pub struct MSequence(Vec<MValue>);
 
@@ -24,9 +24,9 @@ impl DerefMut for MSequence {
     }
 }
 
-impl PartialEq for MSequence {
-    fn eq(&self, other: &Self) -> bool {
-        self.0 == other.0
+impl MMatch for MSequence {
+    fn matches(&self, other: &Self) -> bool {
+        return self.0.iter().zip(other.0.iter()).all(|(a, b)| a.matches(b));
     }
 }
 

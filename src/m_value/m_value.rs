@@ -8,9 +8,11 @@ use serde_yaml::Number;
 
 use crate::{progress_println, variables::SuiteVariables};
 
-use super::{m_map::Mapping, m_sequence::MSequence, matcher_definition::MatcherDefintion};
+use super::{
+    m_map::Mapping, m_match::MMatch, m_sequence::MSequence, matcher_definition::MatcherDefinition,
+};
 
-#[derive(Debug, Hash, Clone)]
+#[derive(Debug, PartialEq, Hash, Clone)]
 pub enum MValue {
     Null,
     Bool(bool),
@@ -18,7 +20,7 @@ pub enum MValue {
     String(String),
     Sequence(MSequence),
     Mapping(Mapping),
-    Matcher(Box<MatcherDefintion>),
+    Matcher(Box<MatcherDefinition>),
 }
 
 impl Default for MValue {
@@ -64,7 +66,7 @@ impl<'de> Deserialize<'de> for MValue {
             where
                 E: de::Error,
             {
-                match MatcherDefintion::try_from(value) {
+                match MatcherDefinition::try_from(value) {
                     Ok(matcher) => Ok(MValue::Matcher(Box::new(matcher))),
                     Err(_) => Ok(MValue::String(String::from(value))),
                 }
@@ -74,7 +76,7 @@ impl<'de> Deserialize<'de> for MValue {
             where
                 E: de::Error,
             {
-                match MatcherDefintion::try_from(value.as_str()) {
+                match MatcherDefinition::try_from(value.as_str()) {
                     Ok(matcher) => Ok(MValue::Matcher(Box::new(matcher))),
                     Err(_) => Ok(MValue::String(value)),
                 }
@@ -152,19 +154,8 @@ impl<'de> Deserialize<'de> for MValue {
     }
 }
 
-impl PartialEq for MValue {
-    fn eq(&self, other: &Self) -> bool {
-        // match (self, other) {
-        //     (Self::Bool(l0), Self::Bool(r0)) => l0 == r0,
-        //     (Self::Number(l0), Self::Number(r0)) => l0 == r0,
-        //     (Self::String(l0), Self::String(r0)) => l0 == r0,
-        //     (Self::Sequence(l0), Self::Sequence(r0)) => l0 == r0,
-        //     (Self::Mapping(l0), Self::Mapping(r0)) => l0 == r0,
-        //     (Self::Matcher(l0), other) => l0.is_match(&other),
-        //     (Self::Null, _) => true,
-        //     _ => false,
-        // }
-
+impl MMatch for MValue {
+    fn matches(&self, other: &Self) -> bool {
         match (self, other) {
             (MValue::Bool(left), MValue::Bool(right)) => {
                 let result = left.eq(right);
@@ -188,21 +179,21 @@ impl PartialEq for MValue {
                 result
             }
             (MValue::Sequence(left), MValue::Sequence(right)) => {
-                let result = left.eq(right);
+                let result = left.matches(right);
                 if !result {
                     progress_println!("Assertion failed at {} == {}", &left, &right);
                 }
                 result
             }
             (MValue::Mapping(left), MValue::Mapping(right)) => {
-                let result = left.eq(right);
+                let result = left.matches(right);
                 if !result {
                     progress_println!("Assertion failed at {} == {}", &left, &right);
                 }
                 result
             }
             (MValue::Matcher(left), right) => {
-                let result = left.is_match(&right);
+                let result = left.matches(&right);
                 if !result {
                     progress_println!("Assertion failed at {} == {}", &left, &right);
                 }
@@ -210,15 +201,6 @@ impl PartialEq for MValue {
             }
             (MValue::Null, _) => true,
             _ => false,
-        }
-    }
-}
-
-impl PartialEq<MValue> for Option<MValue> {
-    fn eq(&self, other: &MValue) -> bool {
-        match self {
-            Some(value) => value == other,
-            None => true,
         }
     }
 }
@@ -345,7 +327,7 @@ mod test {
             - 1
         "#;
 
-        let matcher = MatcherDefintion::try_from("$exists").unwrap();
+        let matcher = MatcherDefinition::try_from("$exists").unwrap();
 
         let mut mapping = Mapping::new();
         mapping.insert(
@@ -382,8 +364,8 @@ mod test {
         let yaml2 = serde_yaml::from_str::<MValue>(yaml2).unwrap();
         let yaml3 = serde_yaml::from_str::<MValue>(yaml3).unwrap();
 
-        assert_eq!(yaml1, yaml2);
-        assert_ne!(yaml1, yaml3);
+        assert!(yaml1.matches(&yaml2));
+        assert!(!yaml1.matches(&yaml3));
     }
 
     #[test]

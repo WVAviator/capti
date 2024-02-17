@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 use crate::{
     errors::CaptiError,
-    m_value::{m_value::MValue, status_matcher::StatusMatcher},
+    m_value::{m_match::MMatch, m_value::MValue, status_matcher::StatusMatcher},
     suite::test::TestResult,
     variables::{variable_map::VariableMap, SuiteVariables},
 };
@@ -39,15 +39,15 @@ impl ResponseDefinition {
     }
 
     pub fn compare(&self, other: &ResponseDefinition) -> TestResult {
-        if !self.status.eq(&other.status) {
+        if !self.status.matches(&other.status) {
             return TestResult::fail("Status does not match.");
         }
 
-        if !self.headers.eq(&other.headers) {
+        if !self.headers.matches(&other.headers) {
             return TestResult::fail("Headers do not match.");
         }
 
-        if !self.body.eq(&other.body) {
+        if !self.body.matches(&other.body) {
             return TestResult::fail("Body does not match.");
         }
 

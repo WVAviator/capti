@@ -2,15 +2,17 @@ use std::fmt;
 
 use serde::Deserialize;
 
-#[derive(Debug, Clone, Deserialize)]
+use super::m_match::MMatch;
+
+#[derive(Debug, PartialEq, Clone, Deserialize)]
 #[serde(untagged)]
 pub enum StatusMatcher {
     Exact(u16),
     Class(String),
 }
 
-impl PartialEq for StatusMatcher {
-    fn eq(&self, other: &Self) -> bool {
+impl MMatch for StatusMatcher {
+    fn matches(&self, other: &Self) -> bool {
         match (self, other) {
             (StatusMatcher::Exact(a), StatusMatcher::Exact(b)) => a.eq(b),
             (StatusMatcher::Class(a), StatusMatcher::Class(b)) => a.eq(b),

@@ -14,9 +14,9 @@ use crate::{
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
-use super::m_value::MValue;
+use super::{m_match::MMatch, m_value::MValue};
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, PartialEq, Default, Clone)]
 pub struct Mapping {
     map: IndexMap<MValue, MValue>,
 }
@@ -69,11 +69,11 @@ impl Serialize for Mapping {
     }
 }
 
-impl PartialEq for Mapping {
-    fn eq(&self, other: &Self) -> bool {
+impl MMatch for Mapping {
+    fn matches(&self, other: &Self) -> bool {
         for (k, v) in &self.map {
             let other_v = other.get(k).unwrap_or(&MValue::Null);
-            if v != other_v {
+            if !v.matches(other_v) {
                 progress_println!(
                     "Mismatch at key {}:\n  expected: {}\n  found: {}",
                     &k,
@@ -85,15 +85,6 @@ impl PartialEq for Mapping {
         }
 
         true
-    }
-}
-
-impl PartialEq<Mapping> for Option<Mapping> {
-    fn eq(&self, other: &Mapping) -> bool {
-        match self {
-            Some(mapping) => mapping.eq(other),
-            None => true,
-        }
     }
 }
 

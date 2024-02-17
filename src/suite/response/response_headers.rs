@@ -1,13 +1,13 @@
 use crate::{
     errors::CaptiError,
-    m_value::{m_map::Mapping, m_value::MValue},
+    m_value::{m_map::Mapping, m_match::MMatch, m_value::MValue},
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 use reqwest::header::HeaderMap;
 use serde::Deserialize;
 use std::{fmt, ops::Deref};
 
-#[derive(Debug, Default, Clone, Deserialize)]
+#[derive(Debug, PartialEq, Default, Clone, Deserialize)]
 #[serde(transparent)]
 pub struct ResponseHeaders(Mapping);
 
@@ -21,8 +21,8 @@ impl SuiteVariables for ResponseHeaders {
     }
 }
 
-impl PartialEq for ResponseHeaders {
-    fn eq(&self, other: &Self) -> bool {
+impl MMatch for ResponseHeaders {
+    fn matches(&self, other: &Self) -> bool {
         let lowercase_headers = self
             .0
             .iter()
@@ -35,7 +35,7 @@ impl PartialEq for ResponseHeaders {
             })
             .collect::<Mapping>();
 
-        lowercase_headers.eq(&other.0)
+        lowercase_headers.matches(&other.0)
     }
 }
 

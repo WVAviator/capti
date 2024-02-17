@@ -1,4 +1,4 @@
-use crate::m_value::{m_value::MValue, match_processor::MatchProcessor};
+use crate::m_value::{m_match::MMatch, m_value::MValue, match_processor::MatchProcessor};
 
 /// The $includes matcher checks an array to see if the provided value is included.
 /// Returns true if a matching (following standard matching rules) value is found in the array.
@@ -18,7 +18,7 @@ impl MatchProcessor for Includes {
 
     fn is_match(&self, args: &MValue, value: &MValue) -> bool {
         match value {
-            MValue::Sequence(arr) => arr.iter().any(|i| args.eq(i)),
+            MValue::Sequence(arr) => arr.iter().any(|i| args.matches(i)),
             _ => false,
         }
     }
