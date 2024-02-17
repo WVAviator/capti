@@ -80,7 +80,7 @@ tests:
       method: GET
       url: ${BASE_URL}/recipes/${RECIPE_ID}
     expect:
-      status: 2xx
+      status: 3xx
       body:
         id: ${RECIPE_ID}
         name: Guacamole
@@ -91,7 +91,7 @@ tests:
       method: GET
       url: ${BASE_URL}/recipes
     expect:
-      status: 2xx
+      status: 202
       body: '$includes { "id": "${RECIPE_ID}" }'
 
   - test: User only has one recipe
