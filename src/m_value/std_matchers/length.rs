@@ -130,13 +130,15 @@ impl From<&MValue> for LengthMatcher {
 
 #[cfg(test)]
 mod test {
+    use crate::m_value::m_sequence::MSequence;
+
     use super::*;
 
     #[test]
     fn works_with_numeric_matcher() {
         let matcher = Length::new();
         let args = MValue::Number(5.into());
-        let value = MValue::Sequence(vec![MValue::Null; 5]);
+        let value = MValue::Sequence(MSequence::from(vec![MValue::Null; 5]));
         assert!(matcher.is_match(&args, &value));
     }
 

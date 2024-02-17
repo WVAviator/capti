@@ -1,4 +1,5 @@
 pub mod m_map;
+pub mod m_sequence;
 pub mod m_value;
 pub mod match_processor;
 pub mod matcher_definition;

@@ -6,9 +6,9 @@ use serde::{
 };
 use serde_yaml::Number;
 
-use crate::variables::SuiteVariables;
+use crate::{progress_println, variables::SuiteVariables};
 
-use super::{m_map::Mapping, matcher_definition::MatcherDefintion};
+use super::{m_map::Mapping, m_sequence::MSequence, matcher_definition::MatcherDefintion};
 
 #[derive(Debug, Hash, Clone)]
 pub enum MValue {
@@ -16,7 +16,7 @@ pub enum MValue {
     Bool(bool),
     Number(Number),
     String(String),
-    Sequence(Sequence),
+    Sequence(MSequence),
     Mapping(Mapping),
     Matcher(Box<MatcherDefintion>),
 }
@@ -45,8 +45,6 @@ impl Serialize for MValue {
 }
 
 impl Eq for MValue {}
-
-pub type Sequence = Vec<MValue>;
 
 impl<'de> Deserialize<'de> for MValue {
     fn deserialize<D>(deserializer: D) -> Result<MValue, D::Error>
@@ -136,7 +134,7 @@ impl<'de> Deserialize<'de> for MValue {
                 A: SeqAccess<'de>,
             {
                 let de = serde::de::value::SeqAccessDeserializer::new(data);
-                let sequence = Sequence::deserialize(de)?;
+                let sequence = MSequence::deserialize(de)?;
                 Ok(MValue::Sequence(sequence))
             }
 
@@ -156,14 +154,61 @@ impl<'de> Deserialize<'de> for MValue {
 
 impl PartialEq for MValue {
     fn eq(&self, other: &Self) -> bool {
+        // match (self, other) {
+        //     (Self::Bool(l0), Self::Bool(r0)) => l0 == r0,
+        //     (Self::Number(l0), Self::Number(r0)) => l0 == r0,
+        //     (Self::String(l0), Self::String(r0)) => l0 == r0,
+        //     (Self::Sequence(l0), Self::Sequence(r0)) => l0 == r0,
+        //     (Self::Mapping(l0), Self::Mapping(r0)) => l0 == r0,
+        //     (Self::Matcher(l0), other) => l0.is_match(&other),
+        //     (Self::Null, _) => true,
+        //     _ => false,
+        // }
+
         match (self, other) {
-            (Self::Bool(l0), Self::Bool(r0)) => l0 == r0,
-            (Self::Number(l0), Self::Number(r0)) => l0 == r0,
-            (Self::String(l0), Self::String(r0)) => l0 == r0,
-            (Self::Sequence(l0), Self::Sequence(r0)) => l0 == r0,
-            (Self::Mapping(l0), Self::Mapping(r0)) => l0 == r0,
-            (Self::Matcher(l0), other) => l0.is_match(&other),
-            (Self::Null, _) => true,
+            (MValue::Bool(left), MValue::Bool(right)) => {
+                let result = left.eq(right);
+                if !result {
+                    progress_println!("Assertion failed at {} == {}", &left, &right);
+                }
+                result
+            }
+            (MValue::String(left), MValue::String(right)) => {
+                let result = left.eq(right);
+                if !result {
+                    progress_println!("Assertion failed at {} == {}", &left, &right);
+                }
+                result
+            }
+            (MValue::Number(left), MValue::Number(right)) => {
+                let result = left.eq(right);
+                if !result {
+                    progress_println!("Assertion failed at {} == {}", &left, &right);
+                }
+                result
+            }
+            (MValue::Sequence(left), MValue::Sequence(right)) => {
+                let result = left.eq(right);
+                if !result {
+                    progress_println!("Assertion failed at {} == {}", &left, &right);
+                }
+                result
+            }
+            (MValue::Mapping(left), MValue::Mapping(right)) => {
+                let result = left.eq(right);
+                if !result {
+                    progress_println!("Assertion failed at {} == {}", &left, &right);
+                }
+                result
+            }
+            (MValue::Matcher(left), right) => {
+                let result = left.is_match(&right);
+                if !result {
+                    progress_println!("Assertion failed at {} == {}", &left, &right);
+                }
+                result
+            }
+            (MValue::Null, _) => true,
             _ => false,
         }
     }
@@ -189,7 +234,7 @@ impl SuiteVariables for MValue {
                 *s = new_s;
             }
             MValue::Sequence(seq) => {
-                for value in seq {
+                for value in seq.iter_mut() {
                     value.populate_variables(variables)?;
                 }
             }
@@ -259,11 +304,11 @@ mod test {
         let mut mapping = Mapping::new();
         mapping.insert(
             MValue::String("hello".to_string()),
-            MValue::Sequence(vec![
+            MValue::Sequence(MSequence::from(vec![
                 MValue::Null,
                 MValue::Bool(true),
                 MValue::Number(1.into()),
-            ]),
+            ])),
         );
         let mut nested_mapping = Mapping::new();
         nested_mapping.insert(
@@ -276,12 +321,12 @@ mod test {
         );
         mapping.insert(
             MValue::String("world".to_string()),
-            MValue::Sequence(vec![
+            MValue::Sequence(MSequence::from(vec![
                 MValue::Number(1.0.into()),
                 MValue::String("string".to_string()),
                 MValue::Bool(false),
                 MValue::Mapping(nested_mapping),
-            ]),
+            ])),
         );
 
         let expected = MValue::Mapping(mapping);
@@ -305,11 +350,11 @@ mod test {
         let mut mapping = Mapping::new();
         mapping.insert(
             MValue::String("hello".to_string()),
-            MValue::Sequence(vec![
+            MValue::Sequence(MSequence::from(vec![
                 MValue::Matcher(Box::new(matcher)),
                 MValue::Bool(true),
                 MValue::Number(1.into()),
-            ]),
+            ])),
         );
 
         let expected = MValue::Mapping(mapping);
@@ -361,10 +406,10 @@ mod test {
             ),
             (
                 MValue::String("world".to_string()),
-                MValue::Sequence(vec![
+                MValue::Sequence(MSequence::from(vec![
                     MValue::String("Say ${HELLO}!".to_string()),
                     MValue::String("Say ${HELLO}!".to_string()),
-                ]),
+                ])),
             ),
         ]));
         value.populate_variables(&mut variables).unwrap();
@@ -377,10 +422,10 @@ mod test {
                 ),
                 (
                     MValue::String("world".to_string()),
-                    MValue::Sequence(vec![
+                    MValue::Sequence(MSequence::from(vec![
                         MValue::String("Say hi!".to_string()),
                         MValue::String("Say hi!".to_string()),
-                    ]),
+                    ])),
                 ),
             ]))
         );

@@ -45,6 +45,16 @@ impl SuiteVariables for Mapping {
     }
 }
 
+impl fmt::Display for Mapping {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{{ ")?;
+        for (key, value) in &self.map {
+            write!(f, "{}: {}, ", key, value)?;
+        }
+        write!(f, "}}")
+    }
+}
+
 impl Serialize for Mapping {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
