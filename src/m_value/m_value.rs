@@ -10,10 +10,13 @@ use serde_yaml::Number;
 use crate::variables::SuiteVariables;
 
 use super::{
-    m_map::Mapping, m_match::MMatch, m_sequence::MSequence, match_context::MatchContext,
+    m_map::MMap, m_match::MMatch, m_sequence::MSequence, match_context::MatchContext,
     matcher_definition::MatcherDefinition,
 };
 
+/// The MValue is very similar to a typical YAML value, however instead of handling tags, special
+/// matchers are handled instead during deserialization. These would normally appear as strings in
+/// YAML values, but are separated out based on the matcher's presence in the MatcherMap.
 #[derive(Debug, PartialEq, Hash, Clone)]
 pub enum MValue {
     Null,
@@ -21,7 +24,7 @@ pub enum MValue {
     Number(Number),
     String(String),
     Sequence(MSequence),
-    Mapping(Mapping),
+    Mapping(MMap),
     Matcher(Box<MatcherDefinition>),
 }
 
@@ -147,7 +150,7 @@ impl<'de> Deserialize<'de> for MValue {
                 A: MapAccess<'de>,
             {
                 let de = serde::de::value::MapAccessDeserializer::new(data);
-                let mapping = Mapping::deserialize(de)?;
+                let mapping = MMap::deserialize(de)?;
                 Ok(MValue::Mapping(mapping))
             }
         }
@@ -289,7 +292,7 @@ mod test {
               abc: def
         "#;
 
-        let mut mapping = Mapping::new();
+        let mut mapping = MMap::new();
         mapping.insert(
             MValue::String("hello".to_string()),
             MValue::Sequence(MSequence::from(vec![
@@ -298,7 +301,7 @@ mod test {
                 MValue::Number(1.into()),
             ])),
         );
-        let mut nested_mapping = Mapping::new();
+        let mut nested_mapping = MMap::new();
         nested_mapping.insert(
             MValue::String("test".to_string()),
             MValue::String("true".to_string()),
@@ -335,7 +338,7 @@ mod test {
 
         let matcher = MatcherDefinition::try_from("$exists").unwrap();
 
-        let mut mapping = Mapping::new();
+        let mut mapping = MMap::new();
         mapping.insert(
             MValue::String("hello".to_string()),
             MValue::Sequence(MSequence::from(vec![
@@ -387,7 +390,7 @@ mod test {
     fn populates_variables_nested() {
         let mut variables = crate::variables::variable_map::VariableMap::new();
         variables.insert("HELLO", "hi");
-        let mut value = MValue::Mapping(Mapping::from(vec![
+        let mut value = MValue::Mapping(MMap::from(vec![
             (
                 MValue::String("hello".to_string()),
                 MValue::String("Say ${HELLO}!".to_string()),
@@ -403,7 +406,7 @@ mod test {
         value.populate_variables(&mut variables).unwrap();
         assert_eq!(
             value,
-            MValue::Mapping(Mapping::from(vec![
+            MValue::Mapping(MMap::from(vec![
                 (
                     MValue::String("hello".to_string()),
                     MValue::String("Say hi!".to_string()),

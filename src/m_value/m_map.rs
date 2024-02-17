@@ -15,14 +15,16 @@ use crate::{
 
 use super::{m_match::MMatch, m_value::MValue, match_context::MatchContext};
 
+/// A map of `MValue` keys to `MValue` values. Equivalent to a typical YAML mapping, with the
+/// additional matcher type handled.
 #[derive(Debug, PartialEq, Default, Clone)]
-pub struct Mapping {
+pub struct MMap {
     map: IndexMap<MValue, MValue>,
 }
 
-impl Mapping {
+impl MMap {
     pub fn new() -> Self {
-        Mapping {
+        MMap {
             map: IndexMap::new(),
         }
     }
@@ -35,7 +37,7 @@ impl Mapping {
     }
 }
 
-impl SuiteVariables for Mapping {
+impl SuiteVariables for MMap {
     fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), CaptiError> {
         for value in self.map.values_mut() {
             value.populate_variables(variables)?;
@@ -44,14 +46,8 @@ impl SuiteVariables for Mapping {
     }
 }
 
-impl fmt::Display for Mapping {
+impl fmt::Display for MMap {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // write!(f, "{{ ")?;
-        // for (key, value) in &self.map {
-        //     write!(f, "{}: {}, ", key, value)?;
-        // }
-        // write!(f, "}}")
-
         writeln!(f, " ")?;
         let pretty_json = serde_json::to_string_pretty(&self).unwrap_or("".to_string());
         for line in pretty_json.lines() {
@@ -62,7 +58,7 @@ impl fmt::Display for Mapping {
     }
 }
 
-impl Serialize for Mapping {
+impl Serialize for MMap {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::ser::Serializer,
@@ -76,7 +72,7 @@ impl Serialize for Mapping {
     }
 }
 
-impl MMatch for Mapping {
+impl MMatch for MMap {
     fn matches(&self, other: &Self) -> bool {
         for (k, v) in &self.map {
             let other_v = other.get(k).unwrap_or(&MValue::Null);
@@ -105,14 +101,14 @@ impl MMatch for Mapping {
     }
 }
 
-impl FromIterator<(MValue, MValue)> for Mapping {
+impl FromIterator<(MValue, MValue)> for MMap {
     fn from_iter<T: IntoIterator<Item = (MValue, MValue)>>(iter: T) -> Self {
         let map = iter.into_iter().collect::<IndexMap<MValue, MValue>>();
-        Mapping { map }
+        MMap { map }
     }
 }
 
-impl Hash for Mapping {
+impl Hash for MMap {
     fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
         let mut xor = 0;
         for (k, v) in &self.map {
@@ -125,30 +121,30 @@ impl Hash for Mapping {
     }
 }
 
-impl From<Vec<(MValue, MValue)>> for Mapping {
+impl From<Vec<(MValue, MValue)>> for MMap {
     fn from(vec: Vec<(MValue, MValue)>) -> Self {
         let mut map = IndexMap::new();
         for (k, v) in vec {
             map.insert(k, v);
         }
-        Mapping { map }
+        MMap { map }
     }
 }
 
-impl Deref for Mapping {
+impl Deref for MMap {
     type Target = IndexMap<MValue, MValue>;
     fn deref(&self) -> &Self::Target {
         &self.map
     }
 }
 
-impl DerefMut for Mapping {
+impl DerefMut for MMap {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.map
     }
 }
 
-impl<'de> Deserialize<'de> for Mapping {
+impl<'de> Deserialize<'de> for MMap {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -156,7 +152,7 @@ impl<'de> Deserialize<'de> for Mapping {
         struct Visitor;
 
         impl<'de> serde::de::Visitor<'de> for Visitor {
-            type Value = Mapping;
+            type Value = MMap;
 
             fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
                 formatter.write_str("a YAML mapping")
@@ -167,7 +163,7 @@ impl<'de> Deserialize<'de> for Mapping {
             where
                 E: serde::de::Error,
             {
-                Ok(Mapping::new())
+                Ok(MMap::new())
             }
 
             #[inline]
@@ -175,7 +171,7 @@ impl<'de> Deserialize<'de> for Mapping {
             where
                 A: serde::de::MapAccess<'de>,
             {
-                let mut mapping = Mapping::new();
+                let mut mapping = MMap::new();
 
                 while let Some(key) = data.next_key()? {
                     match mapping.entry(key) {

@@ -74,9 +74,9 @@ impl fmt::Display for ResponseDefinition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, " ")?;
 
-        writeln!(f, "  Status: {}", self.status)?;
+        writeln!(f, "  Status: {}\n ", self.status)?;
 
-        writeln!(f, "  {}", self.headers)?;
+        writeln!(f, "  Headers:\n{}", self.headers)?;
 
         if let Ok(json) = serde_json::to_string_pretty(&self.body) {
             writeln!(f, "  Body:")?;

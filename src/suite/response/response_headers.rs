@@ -1,6 +1,6 @@
 use crate::{
     errors::CaptiError,
-    m_value::{m_map::Mapping, m_match::MMatch, m_value::MValue, match_context::MatchContext},
+    m_value::{m_map::MMap, m_match::MMatch, m_value::MValue, match_context::MatchContext},
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 use reqwest::header::HeaderMap;
@@ -9,7 +9,7 @@ use std::{fmt, ops::Deref};
 
 #[derive(Debug, PartialEq, Default, Clone, Deserialize)]
 #[serde(transparent)]
-pub struct ResponseHeaders(Mapping);
+pub struct ResponseHeaders(MMap);
 
 impl SuiteVariables for ResponseHeaders {
     fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), CaptiError> {
@@ -33,7 +33,7 @@ impl MMatch for ResponseHeaders {
                 };
                 (key, value.clone())
             })
-            .collect::<Mapping>();
+            .collect::<MMap>();
 
         lowercase_headers.matches(&other.0)
     }
@@ -52,7 +52,7 @@ impl MMatch for ResponseHeaders {
                     };
                     (key, value.clone())
                 })
-                .collect::<Mapping>();
+                .collect::<MMap>();
             context += lowercase_headers.get_context(&other.0);
         }
         context
@@ -61,7 +61,7 @@ impl MMatch for ResponseHeaders {
 
 impl FromIterator<(MValue, MValue)> for ResponseHeaders {
     fn from_iter<T: IntoIterator<Item = (MValue, MValue)>>(iter: T) -> Self {
-        let map = iter.into_iter().collect::<Mapping>();
+        let map = iter.into_iter().collect::<MMap>();
         ResponseHeaders(map)
     }
 }
@@ -88,14 +88,14 @@ impl From<&HeaderMap> for ResponseHeaders {
                 Some((header, value.to_string()))
             })
             .map(|(key, value)| (MValue::String(key), MValue::String(value)))
-            .collect::<Mapping>();
+            .collect::<MMap>();
 
         return ResponseHeaders(headers);
     }
 }
 
 impl Deref for ResponseHeaders {
-    type Target = Mapping;
+    type Target = MMap;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -103,7 +103,6 @@ impl Deref for ResponseHeaders {
 
 impl fmt::Display for ResponseHeaders {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "Headers:")?;
         for (key, value) in self.0.iter() {
             writeln!(f, "    ▹ {}: {}", key, value)?;
         }

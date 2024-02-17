@@ -7,6 +7,8 @@ use serde::Deserialize;
 
 use super::{m_match::MMatch, m_value::MValue, match_context::MatchContext};
 
+/// A sequence of `MValue` items. Equivalent to a typical YAML sequence, with the additional
+/// matcher handled.
 #[derive(Debug, Default, Clone, Hash, PartialEq, Deserialize)]
 #[serde(transparent)]
 pub struct MSequence(Vec<MValue>);

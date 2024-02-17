@@ -12,6 +12,8 @@ use super::{
     m_match::MMatch, m_value::MValue, match_context::MatchContext, matcher_map::MatcherMap,
 };
 
+/// A wrapper definition for where to find the MatchProcessor necessary to process the match. Built
+/// during deserialization and handles processing matches.
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct MatcherDefinition {
     match_key: String,

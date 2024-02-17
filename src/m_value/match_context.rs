@@ -1,5 +1,7 @@
 use std::{collections::VecDeque, fmt, ops::AddAssign};
 
+/// Provides context for a mismatch between two `MValue` instances.
+/// Used to print information for the user.
 #[derive(Debug, Clone, PartialEq)]
 pub struct MatchContext(VecDeque<String>);
 

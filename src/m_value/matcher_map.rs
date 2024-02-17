@@ -8,6 +8,9 @@ lazy_static! {
     static ref MATCHER_MAP: MatcherMap = MatcherMap::initialize();
 }
 
+/// The MatcherMap provides key/value lookups for every MatchProcessor based on the matcher
+/// functions defined. Every matcher must be registered here before the map is made available
+/// statically.
 pub struct MatcherMap(HashMap<String, Box<dyn MatchProcessor>>);
 
 impl MatcherMap {

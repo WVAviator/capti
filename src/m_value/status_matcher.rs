@@ -5,6 +5,8 @@ use serde::Deserialize;
 
 use super::{m_match::MMatch, match_context::MatchContext};
 
+/// A special matcher specifically for statuses only. Statuses have different matching rules than
+/// MValues.
 #[derive(Debug, PartialEq, Clone, Deserialize)]
 #[serde(untagged)]
 pub enum StatusMatcher {
@@ -61,5 +63,44 @@ impl fmt::Display for StatusMatcher {
                 _ => write!(f, "Invalid status range"),
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn matches_exact() {
+        let matcher = StatusMatcher::Exact(200);
+        let other = StatusMatcher::Exact(200);
+        assert!(matcher.matches(&other));
+    }
+
+    #[test]
+    fn match_fails_exact() {
+        let matcher = StatusMatcher::Exact(200);
+        let other = StatusMatcher::Exact(201);
+        assert!(!matcher.matches(&other));
+    }
+
+    #[test]
+    fn matches_range() {
+        let matcher = StatusMatcher::Class("2xx".to_string());
+        let other = StatusMatcher::Exact(200);
+        let other2 = StatusMatcher::Exact(250);
+        let other3 = StatusMatcher::Exact(299);
+        assert!(matcher.matches(&other));
+        assert!(matcher.matches(&other2));
+        assert!(matcher.matches(&other3));
+    }
+
+    #[test]
+    fn match_fails_range() {
+        let matcher = StatusMatcher::Class("2xx".to_string());
+        let other = StatusMatcher::Exact(300);
+        let other2 = StatusMatcher::Exact(199);
+        assert!(!matcher.matches(&other));
+        assert!(!matcher.matches(&other2));
     }
 }
