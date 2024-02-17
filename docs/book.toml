@@ -1,0 +1,6 @@
+[book]
+authors = ["Alexander Durham (WVAviator)"]
+language = "en"
+multilingual = false
+src = "src"
+title = "Capti Documentation"
