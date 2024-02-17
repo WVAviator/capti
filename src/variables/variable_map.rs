@@ -48,9 +48,28 @@ impl VariableMap {
         // TODO: Load env variables from .env file
     }
 
+    fn has_variables(&mut self, value: &str) -> bool {
+        let var_regex = self.var_regex.clone();
+
+        // Variables can still exist in the string despite them missing from the map
+        // This makes sure the variables not only exist but also exist in the map
+        var_regex.captures(value).is_some_and(|c| {
+            let var_name = match c.get(1) {
+                Some(name) => name.as_str(),
+                None => return false,
+            };
+
+            self.get(var_name).is_some()
+        })
+    }
+
     pub fn replace_variables(&mut self, value: impl Into<MValue>) -> Result<MValue, CaptiError> {
         match value.into() {
             MValue::String(value) => {
+                if !self.has_variables(&value) {
+                    return Ok(MValue::String(value));
+                }
+
                 let total_regex = Regex::new(&format!("^{}$", VARIABLE_MATCHER))?;
                 match total_regex.is_match(&value) {
                     true => self.replace_whole_value(&value),
@@ -61,31 +80,40 @@ impl VariableMap {
         }
     }
 
-    pub fn replace_string_variables(&mut self, value: &str) -> Result<String, CaptiError> {
-        let var_regex = self.var_regex.clone();
-        let result = var_regex.replace_all(value, |captures: &Captures| {
-            if let Some(MValue::String(replacement_val)) = self.get(&captures[1]) {
-                replacement_val
-            } else {
-                captures[0].to_string()
-            }
-        });
+    // pub fn replace_string_variables(&mut self, value: &str) -> Result<String, CaptiError> {
+    //     let var_regex = self.var_regex.clone();
 
-        Ok(result.to_string())
-    }
+    //     let mut result = String::from(value);
+
+    //     while self.has_variables(&result) {
+    //         result = var_regex
+    //             .replace_all(value, |captures: &Captures| {
+    //                 if let Some(MValue::String(replacement_val)) = self.get(&captures[1]) {
+    //                     replacement_val
+    //                 } else {
+    //                     captures[0].to_string()
+    //                 }
+    //             })
+    //             .to_string();
+    //     }
+
+    //     Ok(result)
+    // }
 
     fn replace_string_value(&mut self, value: &str) -> Result<MValue, CaptiError> {
         let var_regex = self.var_regex.clone();
 
         let result = var_regex.replace_all(value, |captures: &Captures| {
             if let Some(replacement_val) = self.get(&captures[1]) {
-                replacement_val.to_string()
+                replacement_val.into()
             } else {
                 captures[0].to_string()
             }
         });
 
-        let result = MValue::String(result.to_string());
+        let mut result = MValue::String(result.to_string());
+
+        result.populate_variables(self)?;
 
         Ok(result)
     }
@@ -99,7 +127,7 @@ impl VariableMap {
             None => MValue::Null,
         };
 
-        result.populate_variables(self)?;
+        result.populate_variables(self);
 
         return Ok(result);
     }
@@ -157,6 +185,8 @@ impl Deref for VariableMap {
 
 #[cfg(test)]
 mod test {
+    use serde_json::json;
+
     use super::*;
 
     #[test]
@@ -169,6 +199,48 @@ mod test {
         let result = variables.replace_variables(value).unwrap();
 
         assert_eq!(result, MValue::String("Say hi to the universe!".into()));
+    }
+
+    #[test]
+    fn replaces_nested_str_variables() {
+        let mut variables = VariableMap::new();
+        variables.insert("HELLO", "hi ${WORLD}");
+        variables.insert("WORLD", "universe");
+
+        let value = "Say ${HELLO}!";
+        let result = variables.replace_variables(value).unwrap();
+
+        assert_eq!(result, MValue::String("Say hi universe!".into()));
+    }
+
+    #[test]
+    fn replaces_whole_value() {
+        let mut variables = VariableMap::new();
+        variables.insert("HELLO", MValue::Bool(true));
+
+        let value = "${HELLO}";
+        let result = variables.replace_variables(value).unwrap();
+
+        assert_eq!(result, MValue::Bool(true));
+    }
+
+    #[test]
+    fn replaces_values_in_complex_nested_structure() {
+        let mut variables = VariableMap::new();
+
+        let json_str = r#"{ "hello": "${WORLD}" }"#;
+        let json_val = serde_json::from_str::<MValue>(&json_str).unwrap();
+
+        variables.insert("WORLD", MValue::Bool(true));
+        variables.insert("HELLO", json_val);
+
+        let value = "${HELLO}";
+        let result = variables.replace_variables(value).unwrap();
+
+        let expected_json_str = r#"{ "hello": true }"#;
+        let expected_json_val = serde_json::from_str::<MValue>(&expected_json_str).unwrap();
+
+        assert_eq!(result, expected_json_val);
     }
 
     #[test]

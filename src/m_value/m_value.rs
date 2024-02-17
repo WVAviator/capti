@@ -273,7 +273,27 @@ impl fmt::Display for MValue {
     }
 }
 
+impl Into<String> for MValue {
+    fn into(self) -> String {
+        match self {
+            MValue::Null => "null".to_string(),
+            MValue::Bool(b) => b.to_string(),
+            MValue::Number(n) => n.to_string(),
+            MValue::String(s) => s,
+            MValue::Sequence(arr) => arr.to_string(),
+            MValue::Mapping(m) => m.to_string(),
+            MValue::Matcher(m) => m.to_string(),
+        }
+    }
+}
+
 impl Into<MValue> for &str {
+    fn into(self) -> MValue {
+        self.to_string().into()
+    }
+}
+
+impl Into<MValue> for &String {
     fn into(self) -> MValue {
         self.to_string().into()
     }

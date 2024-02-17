@@ -2,7 +2,8 @@ suite: "Create Recipe"
 description: "This suite involves creating a new recipe and fetching its information."
 variables:
   BASE_URL: http://localhost:3000
-  USER_EMAIL: recipe@tests.com
+  RECIPE_URL: ${BASE_URL}/recipes
+  USER_EMAIL: recipe1@tests.com
   USER_PASSWORD: hG98s4%%phG
   USER_BODY_EXPECT:
     id: $exists
@@ -27,8 +28,6 @@ variables:
       "Roughly chop onion, green pepper, and jalapeno and add to food processor. Pulse 2-3 times.",
       "Cut and remove seeds from avocados, use spoon to scoop and mash in a bowl.",
       "Mix in the vegetables, seasonings, and lime juice squeezed from a fresh lime." ]
-
-
 
 tests:
   - test: Create new user
@@ -64,7 +63,7 @@ tests:
     description: Create a new recipe
     request:
       method: POST
-      url: ${BASE_URL}/recipes
+      url: ${RECIPE_URL}
       headers:
         Content-Type: application/json
       body: ${RECIPE}
@@ -94,7 +93,6 @@ tests:
       url: ${BASE_URL}/recipes
     expect:
       status: 2xx
-      # body: '$includes { "id": "${RECIPE_ID}" }'
       body: '$includes ${RECIPE}'
 
   - test: User only has one recipe

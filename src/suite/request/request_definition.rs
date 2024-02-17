@@ -45,7 +45,7 @@ impl RequestDefinition {
 
 impl SuiteVariables for RequestDefinition {
     fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), CaptiError> {
-        self.url = variables.replace_string_variables(&self.url)?;
+        self.url = variables.replace_variables(&self.url)?.into();
         self.headers.populate_variables(variables)?;
         self.body.populate_variables(variables)?;
 
