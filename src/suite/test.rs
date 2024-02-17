@@ -140,7 +140,7 @@ pub struct FailureReport {
 impl FailureReport {
     pub fn new(message: impl Into<String>, match_context: MatchContext) -> Self {
         FailureReport {
-            message: message.into(),
+            message: format!("{} {}", "→".red(), message.into()),
             match_context,
         }
     }

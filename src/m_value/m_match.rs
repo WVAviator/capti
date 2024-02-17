@@ -7,9 +7,5 @@ where
     T: Display,
 {
     fn matches(&self, other: &T) -> bool;
-    fn get_context(&self, other: &T) -> MatchContext {
-        let mut context = MatchContext::new();
-        context.push(format!("Assertion failed at {} == {}", &self, &other));
-        context
-    }
+    fn get_context(&self, other: &T) -> MatchContext;
 }

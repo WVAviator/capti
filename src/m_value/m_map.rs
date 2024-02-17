@@ -10,7 +10,6 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
     errors::CaptiError,
-    progress_println,
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
@@ -47,11 +46,19 @@ impl SuiteVariables for Mapping {
 
 impl fmt::Display for Mapping {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{{ ")?;
-        for (key, value) in &self.map {
-            write!(f, "{}: {}, ", key, value)?;
+        // write!(f, "{{ ")?;
+        // for (key, value) in &self.map {
+        //     write!(f, "{}: {}, ", key, value)?;
+        // }
+        // write!(f, "}}")
+
+        writeln!(f, " ")?;
+        let pretty_json = serde_json::to_string_pretty(&self).unwrap_or("".to_string());
+        for line in pretty_json.lines() {
+            writeln!(f, "    {}", line)?;
         }
-        write!(f, "}}")
+
+        Ok(())
     }
 }
 
@@ -74,12 +81,6 @@ impl MMatch for Mapping {
         for (k, v) in &self.map {
             let other_v = other.get(k).unwrap_or(&MValue::Null);
             if !v.matches(other_v) {
-                progress_println!(
-                    "Mismatch at key {}:\n  expected: {}\n  found: {}",
-                    &k,
-                    &v,
-                    &other_v
-                );
                 return false;
             }
         }

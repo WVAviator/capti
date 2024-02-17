@@ -1,5 +1,6 @@
 use std::fmt;
 
+use colored::Colorize;
 use serde::{
     de::{self, MapAccess, SeqAccess, Visitor},
     Deserialize, Deserializer, Serialize,
@@ -174,27 +175,44 @@ impl MMatch for MValue {
             (MValue::Bool(left), MValue::Bool(right)) => {
                 if !left.eq(right) {
                     let mut context = MatchContext::new();
-                    context.push(format!("Assertion failed at {} == {}", &self, &other));
+                    context.push(format!(
+                        "Assertion failed at {} == {}",
+                        &self.to_string().yellow(),
+                        &other.to_string().red()
+                    ));
                     return context;
                 }
             }
             (MValue::String(left), MValue::String(right)) => {
                 if !left.eq(right) {
                     let mut context = MatchContext::new();
-                    context.push(format!("Assertion failed at {} == {}", &self, &other));
+                    context.push(format!(
+                        "Assertion failed at {} == {}",
+                        &self.to_string().yellow(),
+                        &other.to_string().red()
+                    ));
                     return context;
                 }
             }
             (MValue::Number(left), MValue::Number(right)) => {
                 if !left.eq(right) {
                     let mut context = MatchContext::new();
-                    context.push(format!("Assertion failed at {} == {}", &self, &other));
+                    context.push(format!(
+                        "Assertion failed at {} == {}",
+                        &self.to_string().yellow(),
+                        &other.to_string().red()
+                    ));
                     return context;
                 }
             }
-            (left, right) => {
+            (MValue::Sequence(left), MValue::Sequence(right)) => {
                 return left.get_context(right);
             }
+            (MValue::Mapping(left), MValue::Mapping(right)) => {
+                return left.get_context(right);
+            }
+            (MValue::Matcher(left), right) => return left.get_context(right),
+            _ => {}
         }
 
         MatchContext::new()
@@ -243,15 +261,7 @@ impl fmt::Display for MValue {
                 write!(f, "]")?;
             }
             MValue::Mapping(m) => {
-                writeln!(f, "{{")?;
-                for (i, (key, value)) in m.iter().enumerate() {
-                    if i > 0 {
-                        writeln!(f, ", ")?;
-                    }
-                    write!(f, "{}: {}", key, value)?;
-                }
-                writeln!(f, " ")?;
-                write!(f, "}}")?;
+                write!(f, "{}", m)?;
             }
             MValue::Matcher(m) => write!(f, "{}", m)?,
         }

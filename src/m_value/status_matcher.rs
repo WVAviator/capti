@@ -32,7 +32,7 @@ impl MMatch for StatusMatcher {
         let mut context = MatchContext::new();
         if !self.matches(other) {
             context.push(format!(
-                "Match failed at status {} matches {}",
+                "Mismatch at response status:\n    expected: {}\n    found: {}",
                 &self.to_string().yellow(),
                 &other.to_string().red()
             ));
