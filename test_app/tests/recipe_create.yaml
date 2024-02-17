@@ -94,7 +94,8 @@ tests:
       url: ${BASE_URL}/recipes
     expect:
       status: 2xx
-      body: '$includes { "id": "${RECIPE_ID}" }'
+      # body: '$includes { "id": "${RECIPE_ID}" }'
+      body: '$includes ${RECIPE}'
 
   - test: User only has one recipe
     description: User should only show one recipe in their list

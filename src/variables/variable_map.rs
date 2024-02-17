@@ -6,23 +6,33 @@ use regex::{escape, Captures, Regex};
 
 use crate::{errors::CaptiError, m_value::m_value::MValue, progress_println};
 
-// Matches continuous ${words} wrapped like ${this}
-static VARIABLE_MATCHER: &str = r"\$\{(\w+)\}";
+use super::{
+    var_regex::{VarRegex, VARIABLE_MATCHER},
+    SuiteVariables,
+};
 
 #[derive(Debug, Clone, PartialEq, Default, Deserialize)]
-pub struct VariableMap(HashMap<String, MValue>);
+#[serde(transparent)]
+pub struct VariableMap {
+    map: HashMap<String, MValue>,
+    #[serde(skip)]
+    var_regex: VarRegex,
+}
 
 impl VariableMap {
     pub fn new() -> Self {
-        Self(HashMap::new())
+        VariableMap {
+            map: HashMap::new(),
+            var_regex: VarRegex::default(),
+        }
     }
 
     pub fn insert(&mut self, key: impl Into<String>, value: impl Into<MValue>) {
-        self.0.insert(key.into(), value.into());
+        self.map.insert(key.into(), value.into());
     }
 
     pub fn get(&mut self, key: &str) -> Option<MValue> {
-        if let Some(value) = self.0.get(key) {
+        if let Some(value) = self.map.get(key) {
             return Some(value.clone());
         }
 
@@ -52,7 +62,7 @@ impl VariableMap {
     }
 
     pub fn replace_string_variables(&mut self, value: &str) -> Result<String, CaptiError> {
-        let var_regex = Regex::new(VARIABLE_MATCHER)?;
+        let var_regex = self.var_regex.clone();
         let result = var_regex.replace_all(value, |captures: &Captures| {
             if let Some(MValue::String(replacement_val)) = self.get(&captures[1]) {
                 replacement_val
@@ -65,7 +75,8 @@ impl VariableMap {
     }
 
     fn replace_string_value(&mut self, value: &str) -> Result<MValue, CaptiError> {
-        let var_regex = Regex::new(VARIABLE_MATCHER)?;
+        let var_regex = self.var_regex.clone();
+
         let result = var_regex.replace_all(value, |captures: &Captures| {
             if let Some(replacement_val) = self.get(&captures[1]) {
                 replacement_val.to_string()
@@ -80,8 +91,7 @@ impl VariableMap {
     }
 
     fn replace_whole_value(&mut self, value: &str) -> Result<MValue, CaptiError> {
-        let var_regex = Regex::new(VARIABLE_MATCHER)?;
-        let result = match var_regex.captures(value) {
+        let mut result = match self.var_regex.captures(value) {
             Some(captures) => match captures.get(1) {
                 Some(var_name) => self.get(var_name.as_str()).unwrap_or(MValue::Null),
                 None => MValue::Null,
@@ -89,15 +99,16 @@ impl VariableMap {
             None => MValue::Null,
         };
 
+        result.populate_variables(self)?;
+
         return Ok(result);
     }
 
     pub fn extract_variables(&mut self, extractor: &str, actual: &str) -> Result<(), CaptiError> {
-        let var_regex = Regex::new(VARIABLE_MATCHER)?;
         let mut regex_pattern = String::from("^");
         let mut last_end = 0;
 
-        for cap in var_regex.captures_iter(extractor) {
+        for cap in self.var_regex.captures_iter(extractor) {
             let start = match cap.get(0) {
                 Some(start) => start.start(),
                 None => continue,
@@ -140,7 +151,7 @@ impl VariableMap {
 impl Deref for VariableMap {
     type Target = HashMap<String, MValue>;
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.map
     }
 }
 
