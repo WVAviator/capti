@@ -40,15 +40,21 @@ impl ResponseDefinition {
 
     pub fn compare(&self, other: &ResponseDefinition) -> TestResult {
         if !self.status.matches(&other.status) {
-            return TestResult::fail("Status does not match.");
+            return TestResult::fail(
+                "Status does not match.",
+                self.status.get_context(&other.status),
+            );
         }
 
         if !self.headers.matches(&other.headers) {
-            return TestResult::fail("Headers do not match.");
+            return TestResult::fail(
+                "Headers do not match.",
+                self.headers.get_context(&other.headers),
+            );
         }
 
         if !self.body.matches(&other.body) {
-            return TestResult::fail("Body does not match.");
+            return TestResult::fail("Body does not match.", self.body.get_context(&other.body));
         }
 
         return TestResult::Passed;
@@ -68,7 +74,7 @@ impl fmt::Display for ResponseDefinition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, " ")?;
 
-        writeln!(f, "  {}", self.status)?;
+        writeln!(f, "  Status: {}", self.status)?;
 
         writeln!(f, "  {}", self.headers)?;
 

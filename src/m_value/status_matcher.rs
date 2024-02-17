@@ -1,8 +1,9 @@
 use std::fmt;
 
+use colored::Colorize;
 use serde::Deserialize;
 
-use super::m_match::MMatch;
+use super::{m_match::MMatch, match_context::MatchContext};
 
 #[derive(Debug, PartialEq, Clone, Deserialize)]
 #[serde(untagged)]
@@ -26,6 +27,18 @@ impl MMatch for StatusMatcher {
             _ => false,
         }
     }
+
+    fn get_context(&self, other: &Self) -> MatchContext {
+        let mut context = MatchContext::new();
+        if !self.matches(other) {
+            context.push(format!(
+                "Match failed at status {} matches {}",
+                &self.to_string().yellow(),
+                &other.to_string().red()
+            ));
+        }
+        context
+    }
 }
 
 impl From<reqwest::StatusCode> for StatusMatcher {
@@ -38,7 +51,7 @@ impl fmt::Display for StatusMatcher {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             StatusMatcher::Exact(n) => {
-                writeln!(f, "Status: {}", n)
+                write!(f, "{}", n)
             }
             StatusMatcher::Class(s) => match s.as_str() {
                 "2xx" => write!(f, "200-299"),

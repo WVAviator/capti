@@ -1,6 +1,6 @@
 use crate::{
     errors::CaptiError,
-    m_value::{m_map::Mapping, m_match::MMatch, m_value::MValue},
+    m_value::{m_map::Mapping, m_match::MMatch, m_value::MValue, match_context::MatchContext},
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 use reqwest::header::HeaderMap;
@@ -36,6 +36,26 @@ impl MMatch for ResponseHeaders {
             .collect::<Mapping>();
 
         lowercase_headers.matches(&other.0)
+    }
+
+    fn get_context(&self, other: &Self) -> MatchContext {
+        let mut context = MatchContext::new();
+        if !self.matches(other) {
+            context.push("Headers do not match.".to_string());
+            let lowercase_headers = self
+                .0
+                .iter()
+                .map(|(key, value)| {
+                    let key = match key {
+                        MValue::String(s) => MValue::String(s.to_lowercase()),
+                        other => other.clone(),
+                    };
+                    (key, value.clone())
+                })
+                .collect::<Mapping>();
+            context += lowercase_headers.get_context(&other.0);
+        }
+        context
     }
 }
 

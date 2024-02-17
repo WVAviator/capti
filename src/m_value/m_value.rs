@@ -6,10 +6,11 @@ use serde::{
 };
 use serde_yaml::Number;
 
-use crate::{progress_println, variables::SuiteVariables};
+use crate::variables::SuiteVariables;
 
 use super::{
-    m_map::Mapping, m_match::MMatch, m_sequence::MSequence, matcher_definition::MatcherDefinition,
+    m_map::Mapping, m_match::MMatch, m_sequence::MSequence, match_context::MatchContext,
+    matcher_definition::MatcherDefinition,
 };
 
 #[derive(Debug, PartialEq, Hash, Clone)]
@@ -157,51 +158,46 @@ impl<'de> Deserialize<'de> for MValue {
 impl MMatch for MValue {
     fn matches(&self, other: &Self) -> bool {
         match (self, other) {
-            (MValue::Bool(left), MValue::Bool(right)) => {
-                let result = left.eq(right);
-                if !result {
-                    progress_println!("Assertion failed at {} == {}", &left, &right);
-                }
-                result
-            }
-            (MValue::String(left), MValue::String(right)) => {
-                let result = left.eq(right);
-                if !result {
-                    progress_println!("Assertion failed at {} == {}", &left, &right);
-                }
-                result
-            }
-            (MValue::Number(left), MValue::Number(right)) => {
-                let result = left.eq(right);
-                if !result {
-                    progress_println!("Assertion failed at {} == {}", &left, &right);
-                }
-                result
-            }
-            (MValue::Sequence(left), MValue::Sequence(right)) => {
-                let result = left.matches(right);
-                if !result {
-                    progress_println!("Assertion failed at {} == {}", &left, &right);
-                }
-                result
-            }
-            (MValue::Mapping(left), MValue::Mapping(right)) => {
-                let result = left.matches(right);
-                if !result {
-                    progress_println!("Assertion failed at {} == {}", &left, &right);
-                }
-                result
-            }
-            (MValue::Matcher(left), right) => {
-                let result = left.matches(&right);
-                if !result {
-                    progress_println!("Assertion failed at {} == {}", &left, &right);
-                }
-                result
-            }
+            (MValue::Bool(left), MValue::Bool(right)) => left.eq(right),
+            (MValue::String(left), MValue::String(right)) => left.eq(right),
+            (MValue::Number(left), MValue::Number(right)) => left.eq(right),
+            (MValue::Sequence(left), MValue::Sequence(right)) => left.matches(right),
+            (MValue::Mapping(left), MValue::Mapping(right)) => left.matches(right),
+            (MValue::Matcher(left), right) => left.matches(&right),
             (MValue::Null, _) => true,
             _ => false,
         }
+    }
+
+    fn get_context(&self, other: &Self) -> super::match_context::MatchContext {
+        match (self, other) {
+            (MValue::Bool(left), MValue::Bool(right)) => {
+                if !left.eq(right) {
+                    let mut context = MatchContext::new();
+                    context.push(format!("Assertion failed at {} == {}", &self, &other));
+                    return context;
+                }
+            }
+            (MValue::String(left), MValue::String(right)) => {
+                if !left.eq(right) {
+                    let mut context = MatchContext::new();
+                    context.push(format!("Assertion failed at {} == {}", &self, &other));
+                    return context;
+                }
+            }
+            (MValue::Number(left), MValue::Number(right)) => {
+                if !left.eq(right) {
+                    let mut context = MatchContext::new();
+                    context.push(format!("Assertion failed at {} == {}", &self, &other));
+                    return context;
+                }
+            }
+            (left, right) => {
+                return left.get_context(right);
+            }
+        }
+
+        MatchContext::new()
     }
 }
 

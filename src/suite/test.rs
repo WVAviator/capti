@@ -8,6 +8,7 @@ use crate::{
     client::Client,
     errors::CaptiError,
     formatting::Heading,
+    m_value::match_context::MatchContext,
     progress::Spinner,
     progress_println,
     variables::{variable_map::VariableMap, SuiteVariables},
@@ -69,9 +70,10 @@ impl TestDefinition {
         let test_result = self.expect.compare(&response);
 
         let test_result = match (test_result, self.should_fail) {
-            (TestResult::Passed, true) => {
-                TestResult::Failed(FailureReport::new("Expected failure, but test passed."))
-            }
+            (TestResult::Passed, true) => TestResult::Failed(FailureReport::new(
+                "Expected failure, but test passed.",
+                MatchContext::new(),
+            )),
             (TestResult::Failed(_), true) => TestResult::Passed,
             (result, _) => result,
         };
@@ -102,15 +104,15 @@ impl SuiteVariables for TestDefinition {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TestResult {
     Passed,
     Failed(FailureReport),
 }
 
 impl TestResult {
-    pub fn fail(message: impl Into<String>) -> Self {
-        TestResult::Failed(FailureReport::new(message))
+    pub fn fail(message: impl Into<String>, context: MatchContext) -> Self {
+        TestResult::Failed(FailureReport::new(message, context))
     }
 }
 
@@ -129,15 +131,17 @@ impl Into<String> for &TestResult {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FailureReport {
     message: String,
+    match_context: MatchContext,
 }
 
 impl FailureReport {
-    pub fn new(message: impl Into<String>) -> Self {
+    pub fn new(message: impl Into<String>, match_context: MatchContext) -> Self {
         FailureReport {
             message: message.into(),
+            match_context,
         }
     }
 }
@@ -145,6 +149,7 @@ impl FailureReport {
 impl fmt::Display for FailureReport {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}", self.message)?;
+        writeln!(f, "{}", self.match_context)?;
 
         Ok(())
     }

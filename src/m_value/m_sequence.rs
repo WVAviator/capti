@@ -5,7 +5,7 @@ use std::{
 
 use serde::Deserialize;
 
-use super::{m_match::MMatch, m_value::MValue};
+use super::{m_match::MMatch, m_value::MValue, match_context::MatchContext};
 
 #[derive(Debug, Default, Clone, Hash, PartialEq, Deserialize)]
 #[serde(transparent)]
@@ -27,6 +27,24 @@ impl DerefMut for MSequence {
 impl MMatch for MSequence {
     fn matches(&self, other: &Self) -> bool {
         return self.0.iter().zip(other.0.iter()).all(|(a, b)| a.matches(b));
+    }
+
+    fn get_context(&self, other: &Self) -> MatchContext {
+        let mut context = MatchContext::new();
+        self.0
+            .iter()
+            .zip(other.0.iter())
+            .enumerate()
+            .for_each(|(i, (a, b))| {
+                if !a.matches(b) {
+                    context += a.get_context(&b);
+                    context.push(format!("Mismatch at sequence index {}:", i));
+                    context.push(format!("  expected: {}", a));
+                    context.push(format!("  found: {}", b));
+                }
+            });
+
+        context
     }
 }
 

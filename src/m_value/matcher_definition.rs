@@ -1,5 +1,6 @@
 use std::fmt;
 
+use colored::Colorize;
 use serde::Serialize;
 
 use crate::{
@@ -7,7 +8,9 @@ use crate::{
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
-use super::{m_match::MMatch, m_value::MValue, matcher_map::MatcherMap};
+use super::{
+    m_match::MMatch, m_value::MValue, match_context::MatchContext, matcher_map::MatcherMap,
+};
 
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct MatcherDefinition {
@@ -31,6 +34,20 @@ impl MMatch<MValue> for MatcherDefinition {
         }
 
         false
+    }
+
+    fn get_context(&self, other: &MValue) -> MatchContext {
+        let mut context = MatchContext::new();
+        if let Some(matcher) = MatcherMap::get_matcher(&self.match_key) {
+            if !matcher.is_match(&self.args, other) {
+                context.push(format!(
+                    "Match failed at {} matches {}",
+                    &self.to_string().yellow(),
+                    &other.to_string().red()
+                ));
+            }
+        }
+        context
     }
 }
 

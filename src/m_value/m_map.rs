@@ -14,7 +14,7 @@ use crate::{
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
-use super::{m_match::MMatch, m_value::MValue};
+use super::{m_match::MMatch, m_value::MValue, match_context::MatchContext};
 
 #[derive(Debug, PartialEq, Default, Clone)]
 pub struct Mapping {
@@ -85,6 +85,22 @@ impl MMatch for Mapping {
         }
 
         true
+    }
+
+    fn get_context(&self, other: &Self) -> super::match_context::MatchContext {
+        let mut context = MatchContext::new();
+
+        for (k, v) in &self.map {
+            let other_v = other.get(k).unwrap_or(&MValue::Null);
+            if !v.matches(other_v) {
+                context += v.get_context(&other_v);
+                context.push(format!("Mismatch at key {}:", &k));
+                context.push(format!("  expected: {}", &v));
+                context.push(format!("  found: {}", &other_v));
+            }
+        }
+
+        context
     }
 }
 
