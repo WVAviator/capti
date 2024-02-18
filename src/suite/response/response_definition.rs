@@ -5,6 +5,7 @@ use serde::Deserialize;
 use crate::{
     errors::CaptiError,
     m_value::{m_match::MMatch, m_value::MValue, status_matcher::StatusMatcher},
+    progress_println,
     suite::test::TestResult,
     variables::{variable_map::VariableMap, SuiteVariables},
 };
@@ -26,10 +27,19 @@ impl ResponseDefinition {
 
         let headers = ResponseHeaders::from(response.headers());
 
-        let body = match response.json::<MValue>().await {
+        let body_text = response.text().await.unwrap_or("".to_string());
+        let body = match serde_json::from_str::<MValue>(&body_text) {
             Ok(body) => body,
-            Err(_) => MValue::Null,
+            Err(_) => MValue::String(body_text),
         };
+
+        // let body = match response.json::<MValue>().await {
+        //     Ok(body) => body,
+        //     Err(e) => {
+        //         let text_body = response.text().await.unwrap_or("".to_string());
+        //         MValue::String(text_body)
+        //     }
+        // };
 
         ResponseDefinition {
             status,

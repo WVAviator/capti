@@ -215,7 +215,13 @@ impl MMatch for MValue {
                 return left.get_context(right);
             }
             (MValue::Matcher(left), right) => return left.get_context(right),
-            _ => {}
+            (left, right) => {
+                let mut context = MatchContext::new();
+                context.push(String::from("Mismatched types"));
+                context.push(format!("  expected: {}", &left.to_string(),));
+                context.push(format!("  found: {}", &right.to_string(),));
+                return context;
+            }
         }
 
         MatchContext::new()
