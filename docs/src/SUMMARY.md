@@ -7,6 +7,12 @@
   - [Testing Basics](./writing_tests.md)
 
 - [Matchers](./matchers.md)
+    - [$exists](./matchers/exists.md)
+    - [$absent](./matchers/absent.md)
+    - [$regex](./matchers/regex.md)
+    - [$length](./matchers/length.md)
+    - [$empty](./matchers/empty.md)
+    - [$includes](./matchers/includes.md)
 
 ----
 

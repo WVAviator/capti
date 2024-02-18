@@ -33,4 +33,9 @@ $regex /[Hh]ello/
 
 # this matcher checks whether the array at this position contains an object with the property "id"
 $includes { "id": $exists } 
+
+# includes can also check any other valid YAML/JSON object, value, or matcher
+$includes 5
+$includes "hello, world!"
+$includes $includes 5
 ```

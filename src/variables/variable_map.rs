@@ -127,7 +127,7 @@ impl VariableMap {
             None => MValue::Null,
         };
 
-        result.populate_variables(self);
+        result.populate_variables(self)?;
 
         return Ok(result);
     }
@@ -185,8 +185,6 @@ impl Deref for VariableMap {
 
 #[cfg(test)]
 mod test {
-    use serde_json::json;
-
     use super::*;
 
     #[test]
