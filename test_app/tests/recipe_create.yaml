@@ -1,14 +1,10 @@
-suite: "Create Recipe"
-description: "This suite involves creating a new recipe and fetching its information."
+suite: 'Create Recipe'
+description: 'This suite involves creating a new recipe and fetching its information.'
 variables:
   BASE_URL: http://localhost:3000
   RECIPE_URL: ${BASE_URL}/recipes
   USER_EMAIL: recipe1@tests.com
   USER_PASSWORD: hG98s4%%phG
-  USER_BODY_EXPECT:
-    id: $exists
-    email: ${USER_EMAIL}
-    displayName: john-smith
   RECIPE:
     name: Guacamole
     description: >
@@ -24,12 +20,12 @@ variables:
       - 1/2 tsp cumin
       - 1/2 tsp salt
       - 1/2 tsp red pepper
-    instructions: [
-      "Roughly chop onion, green pepper, and jalapeno and add to food processor. Pulse 2-3 times.",
-      "Cut and remove seeds from avocados, use spoon to scoop and mash in a bowl.",
-      "Mix in the vegetables, seasonings, and lime juice squeezed from a fresh lime." ]
-
-
+    instructions:
+      [
+        'Roughly chop onion, green pepper, and jalapeno and add to food processor. Pulse 2-3 times.',
+        'Cut and remove seeds from avocados, use spoon to scoop and mash in a bowl.',
+        'Mix in the vegetables, seasonings, and lime juice squeezed from a fresh lime.',
+      ]
 
 tests:
   - test: Create new user
@@ -44,13 +40,16 @@ tests:
         password: ${USER_PASSWORD}
     expect:
       status: 2xx
-      body: ${USER_BODY_EXPECT}
+      body:
+        id: $exists
+        email: ${USER_EMAIL}
+        displayName: john-smith
     extract:
       body:
         id: ${USER_ID}
 
   - test: New recipe fails missing required fields
-    description: "If required fields are missing, the request fails."
+    description: 'If required fields are missing, the request fails.'
     request:
       method: POST
       url: ${BASE_URL}/recipes
@@ -80,7 +79,7 @@ tests:
         id: ${RECIPE_ID}
 
   - test: Get recipe
-    description: "Should be able to get recipe information"
+    description: 'Should be able to get recipe information'
     request:
       method: GET
       url: ${BASE_URL}/recipes/${RECIPE_ID}
@@ -107,7 +106,7 @@ tests:
       body: $length >= 1
 
   - test: Delete recipe
-    description: "Deletes the new recipe"
+    description: 'Deletes the new recipe'
     request:
       method: DELETE
       url: ${BASE_URL}/recipes/${RECIPE_ID}
@@ -115,7 +114,7 @@ tests:
       status: 2xx
 
   - test: Recipe is gone
-    description: "The recipe is really gone after deletion"
+    description: 'The recipe is really gone after deletion'
     request:
       method: GET
       url: ${BASE_URL}/recipes/${RECIPE_ID}
@@ -128,9 +127,3 @@ tests:
       url: ${BASE_URL}/auth/user
     expect:
       status: 2xx
-
-
-
-
-
-

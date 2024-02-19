@@ -10,6 +10,7 @@
     - [Config File](./configuration/config.md)
     - [Setup Scripts](./configuration/scripts.md)
     - [Suite Configuration](./configuration/suites.md)
+    - [Test Configuration](./configuration/tests.md)
 
 - [Matchers](./matchers.md)
     - [$exists](./matchers/exists.md)
@@ -20,7 +21,9 @@
     - [$includes](./matchers/includes.md)
 
 - [Variables](./variables.md)
+    - [Complex Variables](./variables/complex.md)
     - [Extracting Variables](./variables/extracting.md)
+    - [Environment Variables](./variables/env_variables.md)
 
 ----
 
