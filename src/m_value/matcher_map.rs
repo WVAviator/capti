@@ -23,6 +23,7 @@ impl MatcherMap {
         map.insert_mp(Empty::new());
         map.insert_mp(Includes::new());
         map.insert_mp(Length::new());
+        map.insert_mp(Not::new());
 
         map
     }

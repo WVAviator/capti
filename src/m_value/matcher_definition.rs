@@ -5,6 +5,7 @@ use serde::Serialize;
 
 use crate::{
     errors::CaptiError,
+    m_value::mvalue_wrapper::MValueWrapper,
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
@@ -81,7 +82,7 @@ impl TryFrom<&str> for MatcherDefinition {
         if let Some(key_candidate) = parts.next() {
             if let Some(_) = MatcherMap::get_matcher(key_candidate) {
                 let args = parts.map(|s| s.into()).collect::<Vec<String>>().join(" ");
-                let args = serde_yaml::from_str::<MValue>(&args).unwrap_or(MValue::String(args));
+                let args = MValueWrapper::from_json_value(&args);
                 return Ok(MatcherDefinition {
                     match_key: key_candidate.to_string(),
                     args,

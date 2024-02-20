@@ -19,6 +19,7 @@
     - [$length](./matchers/length.md)
     - [$empty](./matchers/empty.md)
     - [$includes](./matchers/includes.md)
+    - [$not](./matchers/not.md)
 
 - [Variables](./variables.md)
     - [Complex Variables](./variables/complex.md)

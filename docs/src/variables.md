@@ -22,5 +22,6 @@ tests:
     url: ${BASE_URL}/recipes
   expect:
     status: 2xx
-    body: $length >= 1
+    body: 
+      data: $length >= 1
 ```

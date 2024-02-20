@@ -87,6 +87,43 @@ tests:
       status: 2xx
       body: ${RECIPE}
 
+  - test: Recipe name not incorrect
+    description: This recipe should be named 'Guacamole'
+    should_fail: true
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes/${RECIPE_ID}
+    expect:
+      body:
+        name: $not Guacamole
+
+
+  - test: Get recipe has id
+    description: 'Should be able to get recipe information'
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes/${RECIPE_ID}
+    expect:
+      status: 2xx
+      body: '$not $not { "id": "${RECIPE_ID}" }'
+
+  - test: Recipe list has recipe with id
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes
+    expect:
+      status: 2xx
+      body: '$includes { "id": "${RECIPE_ID}" }'
+
+  - test: Recipe list not empty
+    description: Recipe list should not be empty
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes
+    expect:
+      status: 2xx
+      body: $not $empty 
+
   - test: Recipe in list
     description: Recipe should be visible when listing all recipes
     request:
