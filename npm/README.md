@@ -2,6 +2,20 @@
 
 Capti is a lightweight end-to-end testing framework for REST APIs. Define your requests and expected response values in an intuitive YAML format, and streamline your endpoint testing.
 
+```yaml
+  - test: Get recipe
+    description: "Should be able to get recipe information"
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes/${RECIPE_ID}
+    expect:
+      status: 2xx
+      body:
+        id: ${RECIPE_ID}
+        name: Guacamole
+        ingredients: $exists
+```
+
 ## Installation
 
 Capti is currently available as an NPM package, however Capti is framework-agnostic and can work with any REST APIs. The raw binaries are available on the [GitHub repo](https://github.com/WVAviator/capti/releases) if you prefer not to use NPM.
@@ -26,12 +40,9 @@ Then edit your package.json scripts by adding a `test:capti` script:
 
 ```json
 {
-    ...
     "scripts": {
-        ...
         "test:capti": "capti --path './tests'"
     }
-    ...
 }
 ```
 
@@ -277,6 +288,19 @@ Suites always run concurrently. You should not design your API tests to where an
 
 Note: Regex matchers only work on string values and will return false otherwise.
 
+- `$length` - Match the length of an array, object (number of keys), or string. The `$length` matcher should be followed by a number that represents the expected length of the array/object/string.
+
+```yaml
+  - test: User only has one recipe
+    description: User should only show one recipe in their list
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes
+    expect:
+      status: 2xx
+      body: $length 1
+```
+
 - `$includes` - This matcher is useful for ensuring values exist in arrays. Any value that follows this keyword is incorporated as a matcher itself and follows the same matching rules. You can match strings, booleans, and even objects (however, you will have to define them as JSON strings). Example:
 
 ```yaml
@@ -317,6 +341,7 @@ Capti is under active development and is not production ready. If you want to co
 ### Stretch Features
 1. Support for other frameworks?
 2. Coverage reports?
+3. Plugin API for custom matchers?
 3. Whatever you suggest or require for your project.
 
 ### Contributing

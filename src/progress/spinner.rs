@@ -70,11 +70,9 @@ impl Spinner {
             Ok(TestResult::Passed) => {}
             Ok(TestResult::Failed(failure_report)) => {
                 progress_println!("{}", failure_report);
-                progress_println!(" ");
             }
             Err(e) => {
                 progress_println!("{}", e);
-                progress_println!(" ");
             }
         }
     }

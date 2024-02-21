@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::CaptiError,
+    m_value::m_value::MValue,
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
@@ -13,7 +14,7 @@ pub struct RequestDefinition {
     pub method: RequestMethod,
     pub url: String,
     pub headers: Option<RequestHeaders>,
-    pub body: Option<serde_json::Value>,
+    pub body: Option<MValue>,
 }
 
 impl RequestDefinition {
@@ -44,7 +45,7 @@ impl RequestDefinition {
 
 impl SuiteVariables for RequestDefinition {
     fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), CaptiError> {
-        self.url = variables.replace_variables(&self.url)?;
+        self.url = variables.replace_variables(&self.url)?.into();
         self.headers.populate_variables(variables)?;
         self.body.populate_variables(variables)?;
 

@@ -1,4 +1,4 @@
-pub mod serde;
+mod var_regex;
 pub mod variable_map;
 pub mod variables;
 

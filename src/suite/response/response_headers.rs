@@ -1,35 +1,68 @@
 use crate::{
     errors::CaptiError,
-    matcher::{MatchCmp, MatchResult},
+    m_value::{m_map::MMap, m_match::MMatch, m_value::MValue, match_context::MatchContext},
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 use reqwest::header::HeaderMap;
-use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, fmt, ops::Deref};
+use serde::Deserialize;
+use std::{fmt, ops::Deref};
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Default, Clone, Deserialize)]
 #[serde(transparent)]
-pub struct ResponseHeaders(HashMap<String, String>);
+pub struct ResponseHeaders(MMap);
 
 impl SuiteVariables for ResponseHeaders {
     fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), CaptiError> {
         for (_, value) in self.0.iter_mut() {
-            *value = variables.replace_variables(value.as_str())?;
+            value.populate_variables(variables)?;
         }
 
         Ok(())
     }
 }
 
-impl MatchCmp for ResponseHeaders {
-    fn match_cmp(&self, other: &Self) -> MatchResult {
+impl MMatch for ResponseHeaders {
+    fn matches(&self, other: &Self) -> bool {
         let lowercase_headers = self
             .0
             .iter()
-            .map(|(key, value)| (key.to_lowercase(), value.clone()))
-            .collect::<HashMap<String, String>>();
+            .map(|(key, value)| {
+                let key = match key {
+                    MValue::String(s) => MValue::String(s.to_lowercase()),
+                    other => other.clone(),
+                };
+                (key, value.clone())
+            })
+            .collect::<MMap>();
 
-        lowercase_headers.match_cmp(&other.0)
+        lowercase_headers.matches(&other.0)
+    }
+
+    fn get_context(&self, other: &Self) -> MatchContext {
+        let mut context = MatchContext::new();
+        if !self.matches(other) {
+            context.push("Headers do not match.".to_string());
+            let lowercase_headers = self
+                .0
+                .iter()
+                .map(|(key, value)| {
+                    let key = match key {
+                        MValue::String(s) => MValue::String(s.to_lowercase()),
+                        other => other.clone(),
+                    };
+                    (key, value.clone())
+                })
+                .collect::<MMap>();
+            context += lowercase_headers.get_context(&other.0);
+        }
+        context
+    }
+}
+
+impl FromIterator<(MValue, MValue)> for ResponseHeaders {
+    fn from_iter<T: IntoIterator<Item = (MValue, MValue)>>(iter: T) -> Self {
+        let map = iter.into_iter().collect::<MMap>();
+        ResponseHeaders(map)
     }
 }
 
@@ -54,14 +87,15 @@ impl From<&HeaderMap> for ResponseHeaders {
 
                 Some((header, value.to_string()))
             })
-            .collect::<HashMap<String, String>>();
+            .map(|(key, value)| (MValue::String(key), MValue::String(value)))
+            .collect::<MMap>();
 
         return ResponseHeaders(headers);
     }
 }
 
 impl Deref for ResponseHeaders {
-    type Target = HashMap<String, String>;
+    type Target = MMap;
     fn deref(&self) -> &Self::Target {
         &self.0
     }
@@ -69,7 +103,6 @@ impl Deref for ResponseHeaders {
 
 impl fmt::Display for ResponseHeaders {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "Headers:")?;
         for (key, value) in self.0.iter() {
             writeln!(f, "    ▹ {}: {}", key, value)?;
         }

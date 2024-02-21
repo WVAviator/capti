@@ -1,9 +1,31 @@
-suite: "Create Recipe"
-description: "This suite involves creating a new recipe and fetching its information."
+suite: 'Create Recipe'
+description: 'This suite involves creating a new recipe and fetching its information.'
 variables:
   BASE_URL: http://localhost:3000
-  USER_EMAIL: recipe@testuser.com
+  RECIPE_URL: ${BASE_URL}/recipes
+  USER_EMAIL: recipe1@tests.com
   USER_PASSWORD: hG98s4%%phG
+  RECIPE:
+    name: Guacamole
+    description: >
+      A delicious classic guacamole recipe.
+    time: 10
+    servings: 6
+    ingredients:
+      - 3 avocados
+      - 1/2 red onion
+      - 1 lime
+      - 1 green bell pepper
+      - 1 jalapeno pepper
+      - 1/2 tsp cumin
+      - 1/2 tsp salt
+      - 1/2 tsp red pepper
+    instructions:
+      [
+        'Roughly chop onion, green pepper, and jalapeno and add to food processor. Pulse 2-3 times.',
+        'Cut and remove seeds from avocados, use spoon to scoop and mash in a bowl.',
+        'Mix in the vegetables, seasonings, and lime juice squeezed from a fresh lime.',
+      ]
 
 tests:
   - test: Create new user
@@ -27,7 +49,7 @@ tests:
         id: ${USER_ID}
 
   - test: New recipe fails missing required fields
-    description: "If required fields are missing, the request fails."
+    description: 'If required fields are missing, the request fails.'
     request:
       method: POST
       url: ${BASE_URL}/recipes
@@ -42,28 +64,10 @@ tests:
     description: Create a new recipe
     request:
       method: POST
-      url: ${BASE_URL}/recipes
+      url: ${RECIPE_URL}
       headers:
         Content-Type: application/json
-      body:
-        name: Guacamole
-        description: >
-          A delicious classic guacamole recipe.
-        time: 10
-        servings: 6
-        ingredients:
-          - 3 avocados
-          - 1/2 red onion
-          - 1 lime
-          - 1 green bell pepper
-          - 1 jalapeno pepper
-          - 1/2 tsp cumin
-          - 1/2 tsp salt
-          - 1/2 tsp red pepper
-        instructions: [
-          "Roughly chop onion, green pepper, and jalapeno and add to food processor. Pulse 2-3 times.",
-          "Cut and remove seeds from avocados, use spoon to scoop and mash in a bowl.",
-          "Mix in the vegetables, seasonings, and lime juice squeezed from a fresh lime." ]
+      body: ${RECIPE}
     expect:
       status: 2xx
       body:
@@ -75,15 +79,50 @@ tests:
         id: ${RECIPE_ID}
 
   - test: Get recipe
-    description: "Should be able to get recipe information"
+    description: 'Should be able to get recipe information'
     request:
       method: GET
       url: ${BASE_URL}/recipes/${RECIPE_ID}
     expect:
       status: 2xx
+      body: ${RECIPE}
+
+  - test: Recipe name not incorrect
+    description: This recipe should be named 'Guacamole'
+    should_fail: true
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes/${RECIPE_ID}
+    expect:
       body:
-        id: ${RECIPE_ID}
-        name: Guacamole
+        name: $not Guacamole
+
+
+  - test: Get recipe has id
+    description: 'Should be able to get recipe information'
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes/${RECIPE_ID}
+    expect:
+      status: 2xx
+      body: '$not $not { "id": "${RECIPE_ID}" }'
+
+  - test: Recipe list has recipe with id
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes
+    expect:
+      status: 2xx
+      body: '$includes { "id": "${RECIPE_ID}" }'
+
+  - test: Recipe list not empty
+    description: Recipe list should not be empty
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes
+    expect:
+      status: 2xx
+      body: $not $empty 
 
   - test: Recipe in list
     description: Recipe should be visible when listing all recipes
@@ -92,10 +131,19 @@ tests:
       url: ${BASE_URL}/recipes
     expect:
       status: 2xx
-      body: '$includes { "id": "${RECIPE_ID}" }'
+      body: $includes ${RECIPE}
+
+  - test: User only has one recipe
+    description: User should only show one recipe in their list
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes
+    expect:
+      status: 2xx
+      body: $length >= 1
 
   - test: Delete recipe
-    description: "Deletes the new recipe"
+    description: 'Deletes the new recipe'
     request:
       method: DELETE
       url: ${BASE_URL}/recipes/${RECIPE_ID}
@@ -103,7 +151,7 @@ tests:
       status: 2xx
 
   - test: Recipe is gone
-    description: "The recipe is really gone after deletion"
+    description: 'The recipe is really gone after deletion'
     request:
       method: GET
       url: ${BASE_URL}/recipes/${RECIPE_ID}
@@ -116,9 +164,3 @@ tests:
       url: ${BASE_URL}/auth/user
     expect:
       status: 2xx
-
-
-
-
-
-

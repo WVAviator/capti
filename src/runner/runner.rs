@@ -22,8 +22,22 @@ impl Runner {
                     || e.path().extension().unwrap_or_default() == "yml"
             })
             .map(|e| e.path().to_path_buf())
-            .filter_map(|path| std::fs::read_to_string(path).ok())
-            .filter_map(|data| serde_yaml::from_str::<Suite>(&data).ok())
+            .filter_map(|path| {
+                std::fs::read_to_string(path)
+                    .map_err(|e| {
+                        eprintln!("Failed to read suite: {}", e);
+                        e
+                    })
+                    .ok()
+            })
+            .filter_map(|data| {
+                serde_yaml::from_str::<Suite>(&data)
+                    .map_err(|e| {
+                        eprintln!("Failed to parse suite: {}", e);
+                        e
+                    })
+                    .ok()
+            })
             .collect::<Vec<Suite>>();
 
         progress_println!("Found {} test suites", suites.len());

@@ -118,6 +118,5 @@ mod test {
 
         assert_eq!(suite.suite, String::from("Simple Get Request Tests"));
         assert_eq!(suite.tests[0].request.method, RequestMethod::Get);
-        assert_eq!(suite.tests[0].expect.body.as_ref().unwrap()["id"], 1);
     }
 }

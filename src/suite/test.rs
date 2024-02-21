@@ -2,13 +2,13 @@ use std::fmt::{self, Debug};
 
 use colored::Colorize;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::{
     client::Client,
     errors::CaptiError,
     formatting::Heading,
-    matcher::match_result::MatchResult,
+    m_value::match_context::MatchContext,
     progress::Spinner,
     progress_println,
     variables::{variable_map::VariableMap, SuiteVariables},
@@ -19,7 +19,7 @@ use super::{
     response::ResponseDefinition,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct TestDefinition {
     pub test: String,
     pub description: Option<String>,
@@ -72,7 +72,7 @@ impl TestDefinition {
         let test_result = match (test_result, self.should_fail) {
             (TestResult::Passed, true) => TestResult::Failed(FailureReport::new(
                 "Expected failure, but test passed.",
-                MatchResult::Matches,
+                MatchContext::new(),
             )),
             (TestResult::Failed(_), true) => TestResult::Passed,
             (result, _) => result,
@@ -104,15 +104,15 @@ impl SuiteVariables for TestDefinition {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum TestResult {
     Passed,
     Failed(FailureReport),
 }
 
 impl TestResult {
-    pub fn fail(message: impl Into<String>, match_result: &MatchResult) -> Self {
-        TestResult::Failed(FailureReport::new(message, match_result.clone()))
+    pub fn fail(message: impl Into<String>, context: MatchContext) -> Self {
+        TestResult::Failed(FailureReport::new(message, context))
     }
 }
 
@@ -131,17 +131,17 @@ impl Into<String> for &TestResult {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct FailureReport {
     message: String,
-    match_result: MatchResult,
+    match_context: MatchContext,
 }
 
 impl FailureReport {
-    pub fn new(message: impl Into<String>, match_result: MatchResult) -> Self {
+    pub fn new(message: impl Into<String>, match_context: MatchContext) -> Self {
         FailureReport {
-            message: message.into(),
-            match_result,
+            message: format!("{} {}", "→".red(), message.into()),
+            match_context,
         }
     }
 }
@@ -149,7 +149,7 @@ impl FailureReport {
 impl fmt::Display for FailureReport {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "{}", self.message)?;
-        writeln!(f, "{}", self.match_result)?;
+        writeln!(f, "{}", self.match_context)?;
 
         Ok(())
     }
@@ -158,10 +158,9 @@ impl fmt::Display for FailureReport {
 #[cfg(test)]
 mod test {
 
-    use serde_json::json;
-
     use crate::{
-        matcher::status_matcher::StatusMatcher, suite::response::response_headers::ResponseHeaders,
+        m_value::m_value::MValue,
+        suite::response::{response_headers::ResponseHeaders, status::Status},
     };
 
     use super::*;
@@ -169,14 +168,14 @@ mod test {
     #[test]
     fn test_compare_optional() {
         let matcher = ResponseDefinition {
-            headers: None,
-            body: None,
-            status: None,
+            headers: ResponseHeaders::default(),
+            body: MValue::default(),
+            status: Status::none(),
         };
         let response = ResponseDefinition {
-            headers: Some(ResponseHeaders::default()),
-            body: Some(json!({ "test": "test" })),
-            status: Some(StatusMatcher::Exact(200)),
+            headers: ResponseHeaders::default(),
+            body: serde_json::from_str::<MValue>(r#"{"test": "test"}"#).unwrap(),
+            status: Status::from(200),
         };
 
         assert_eq!(matcher.compare(&response), TestResult::Passed);
@@ -185,14 +184,14 @@ mod test {
     #[test]
     fn test_compare_status_matches() {
         let matcher = ResponseDefinition {
-            headers: None,
-            body: None,
-            status: Some(StatusMatcher::Class(String::from("2xx"))),
+            headers: ResponseHeaders::default(),
+            body: MValue::Null,
+            status: Status::from("2xx"),
         };
         let response = ResponseDefinition {
-            headers: None,
-            body: None,
-            status: Some(StatusMatcher::Exact(200)),
+            headers: ResponseHeaders::default(),
+            body: MValue::Null,
+            status: Status::from(200),
         };
 
         assert_eq!(matcher.compare(&response), TestResult::Passed);

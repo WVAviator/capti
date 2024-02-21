@@ -1,37 +1,45 @@
 use std::fmt;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 use crate::{
     errors::CaptiError,
-    matcher::{match_result::MatchResult, status_matcher::StatusMatcher, MatchCmp},
+    m_value::{m_match::MMatch, m_value::MValue, status_matcher::StatusMatcher},
+    progress_println,
     suite::test::TestResult,
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
-use super::response_headers::ResponseHeaders;
+use super::{response_headers::ResponseHeaders, status::Status};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, PartialEq)]
 pub struct ResponseDefinition {
-    pub status: Option<StatusMatcher>,
-    pub headers: Option<ResponseHeaders>,
-    pub body: Option<serde_json::Value>,
+    pub status: Status,
+    #[serde(default)]
+    pub headers: ResponseHeaders,
+    #[serde(default)]
+    pub body: MValue,
 }
 
 impl ResponseDefinition {
     pub async fn from_response(response: reqwest::Response) -> Self {
-        let status = Some(StatusMatcher::Exact(response.status().as_u16()));
+        let status = Status::from(StatusMatcher::Exact(response.status().as_u16()));
 
         let headers = ResponseHeaders::from(response.headers());
-        let headers = match headers.len() {
-            0 => None,
-            _ => Some(headers),
+
+        let body_text = response.text().await.unwrap_or("".to_string());
+        let body = match serde_json::from_str::<MValue>(&body_text) {
+            Ok(body) => body,
+            Err(_) => MValue::String(body_text),
         };
 
-        let body = match response.json::<serde_json::Value>().await {
-            Ok(body) => Some(body),
-            Err(_) => None,
-        };
+        // let body = match response.json::<MValue>().await {
+        //     Ok(body) => body,
+        //     Err(e) => {
+        //         let text_body = response.text().await.unwrap_or("".to_string());
+        //         MValue::String(text_body)
+        //     }
+        // };
 
         ResponseDefinition {
             status,
@@ -41,19 +49,22 @@ impl ResponseDefinition {
     }
 
     pub fn compare(&self, other: &ResponseDefinition) -> TestResult {
-        match self.status.match_cmp(&other.status) {
-            MatchResult::Matches => {}
-            other => return TestResult::fail("Status does not match.", &other),
+        if !self.status.matches(&other.status) {
+            return TestResult::fail(
+                "Status does not match.",
+                self.status.get_context(&other.status),
+            );
         }
 
-        match self.headers.match_cmp(&other.headers) {
-            MatchResult::Matches => {}
-            other => return TestResult::fail("Headers do not match.", &other),
+        if !self.headers.matches(&other.headers) {
+            return TestResult::fail(
+                "Headers do not match.",
+                self.headers.get_context(&other.headers),
+            );
         }
 
-        match self.body.match_cmp(&other.body) {
-            MatchResult::Matches => {}
-            other => return TestResult::fail("Body does not match.", &other),
+        if !self.body.matches(&other.body) {
+            return TestResult::fail("Body does not match.", self.body.get_context(&other.body));
         }
 
         return TestResult::Passed;
@@ -73,20 +84,14 @@ impl fmt::Display for ResponseDefinition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, " ")?;
 
-        if let Some(status) = &self.status {
-            writeln!(f, "  {}", status)?;
-        }
+        writeln!(f, "  Status: {}\n ", self.status)?;
 
-        if let Some(headers) = &self.headers {
-            writeln!(f, "  {}", headers)?;
-        }
+        writeln!(f, "  Headers:\n{}", self.headers)?;
 
-        if let Some(body) = &self.body {
-            if let Ok(json) = serde_json::to_string_pretty(&body) {
-                writeln!(f, "  Body:")?;
-                for line in json.lines() {
-                    writeln!(f, "    {}", line)?;
-                }
+        if let Ok(json) = serde_json::to_string_pretty(&self.body) {
+            writeln!(f, "  Body:")?;
+            for line in json.lines() {
+                writeln!(f, "    {}", line)?;
             }
         }
 

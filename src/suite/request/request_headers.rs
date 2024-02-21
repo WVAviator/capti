@@ -15,7 +15,7 @@ pub struct RequestHeaders(HashMap<String, String>);
 impl SuiteVariables for RequestHeaders {
     fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), CaptiError> {
         for (_, value) in self.0.iter_mut() {
-            *value = variables.replace_variables(value.as_str())?;
+            *value = variables.replace_variables(value.as_str())?.into();
         }
 
         Ok(())
