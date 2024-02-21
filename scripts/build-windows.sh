@@ -15,5 +15,5 @@ fi
 
 cargo build --release
 
-cp target/release/capti.exe builds/capti-windows-x64.exe
+cp target/release/capti.exe builds/capti-win32-x64.exe
 
