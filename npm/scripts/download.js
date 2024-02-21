@@ -18,8 +18,13 @@ const SUPPORTED_ARCHITECTURE = {
 };
 
 const createLogger = () => {
-  const date = new Date().toISOString();
+  const date = new Date().toISOString().replace(/:/g, '-').replace(/\./g, '_');
   const filename = `${date}.log`;
+
+  if (!fs.existsSync(LOGS_PATH)) {
+    fs.mkdirSync(LOGS_PATH, { recursive: true });
+  }
+
   const logPath = path.resolve(LOGS_PATH, filename);
 
   return (message) => {
@@ -34,8 +39,8 @@ const loadPackageJson = () => {
   return JSON.parse(data);
 };
 
-const { version } = await loadPackageJson();
-log(`Loaded version ${version} from package.json`);
+const { capti_version } = await loadPackageJson();
+log(`Loaded version ${capti_version} from package.json`);
 
 const download = async () => {
   const platform = os.platform();
@@ -56,7 +61,7 @@ const download = async () => {
 
   log(`Downloading ${binary}`);
 
-  const url = `https://github.com/WVAviator/capti/releases/download/${version}/${binary}`;
+  const url = `https://github.com/WVAviator/capti/releases/download/${capti_version}/${binary}`;
 
   log(`Downloading from ${url}`);
 
@@ -74,6 +79,10 @@ const download = async () => {
 
     const buffer = Buffer.from(arrayBuffer);
     log("Buffer created, writing to file...");
+
+    if (!fs.existsSync(DIST_PATH)) {
+      fs.mkdirSync(DIST_PATH, { recursive: true });
+    }
 
     const binaryPath = path.resolve(DIST_PATH, `capti${extension}`);
 
