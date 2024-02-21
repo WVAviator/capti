@@ -1,7 +1,19 @@
+#!/bin/bash
 
-rustup target add x86_64-pc-windows-gnu 2> /dev/null
+OS=$(uname -s)
+ARCH=$(uname -m)
 
-cargo build --release --target x86_64-pc-windows-gnu
+if [ "$OS" != "Windows" ]; then
+  echo "This script is only for Windows"
+  exit 1
+fi
 
-cp target/x86_64-pc-windows-gnu/release/capti.exe builds/capti-windows-x64.exe
+if [ "$ARCH" != "x86_64" ]; then
+  echo "This script is only for x86_64"
+  exit 1
+fi
+
+cargo build --release
+
+cp target/release/capti.exe builds/capti-windows-x64.exe
 
