@@ -5,7 +5,6 @@ use serde::Deserialize;
 use crate::{
     errors::CaptiError,
     m_value::{m_match::MMatch, m_value::MValue, status_matcher::StatusMatcher},
-    progress_println,
     suite::test::TestResult,
     variables::{variable_map::VariableMap, SuiteVariables},
 };
@@ -67,7 +66,7 @@ impl ResponseDefinition {
             return TestResult::fail("Body does not match.", self.body.get_context(&other.body));
         }
 
-        return TestResult::Passed;
+        TestResult::Passed
     }
 }
 

@@ -21,6 +21,7 @@ impl Runner {
                 e.path().extension().unwrap_or_default() == "yaml"
                     || e.path().extension().unwrap_or_default() == "yml"
             })
+            .filter(|e| e.file_name() != "capti-config.yaml" && e.file_name() != "capti-config.yml")
             .map(|e| e.path().to_path_buf())
             .filter_map(|path| {
                 std::fs::read_to_string(path)
@@ -62,7 +63,9 @@ impl Runner {
                 .find_map(|data| serde_yaml::from_str::<RunConfig>(&data).ok()),
         };
 
-        progress_println!("Found config file: {}", config.is_some());
+        if config.is_some() {
+            progress_println!("Loaded config file");
+        }
 
         Runner { suites, config }
     }
