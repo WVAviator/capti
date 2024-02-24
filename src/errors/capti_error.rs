@@ -40,6 +40,9 @@ pub enum CaptiError {
 
     #[error("Error occurred setting up client for requests. Error: {source}")]
     ClientError { source: reqwest::Error },
+
+    #[error("Error occurred parsing or setting suite variables: {0}")]
+    VariableError(String),
 }
 
 impl CaptiError {
