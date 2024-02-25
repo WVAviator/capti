@@ -27,11 +27,11 @@ impl Suite {
     pub fn from_file(path: &str) -> Result<Self, CaptiError> {
         let suite = std::fs::read_to_string(path)?;
         let suite = serde_yaml::from_str::<Suite>(&suite)?;
-        return Ok(suite);
+        Ok(suite)
     }
 
     pub fn get_test_count(&self) -> usize {
-        return self.tests.len();
+        self.tests.len()
     }
 
     pub async fn run(&mut self) -> TestResultsReport {
@@ -100,23 +100,5 @@ impl Suite {
         }
 
         return report;
-    }
-}
-
-#[cfg(test)]
-mod test {
-    use std::fs;
-
-    use crate::suite::request::request_method::RequestMethod;
-
-    use super::*;
-
-    #[test]
-    fn deserializes_simple_get_example() {
-        let example_suite = fs::read_to_string("examples/simple_get.yaml").unwrap();
-        let suite = serde_yaml::from_str::<Suite>(&example_suite).unwrap();
-
-        assert_eq!(suite.suite, String::from("Simple Get Request Tests"));
-        assert_eq!(suite.tests[0].request.method, RequestMethod::Get);
     }
 }

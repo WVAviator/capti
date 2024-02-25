@@ -32,6 +32,7 @@ tests:
       status: 2xx
       headers:
         Content-Type: $regex /json/
+        Set-Cookie: $exists
       body:
         id: $exists
         email: ${USER_EMAIL}

@@ -43,6 +43,9 @@ pub enum CaptiError {
 
     #[error("Error occurred parsing or setting suite variables: {0}")]
     VariableError(String),
+
+    #[error("Unable to parse HTTP headers: {0}")]
+    HTTPHeaderError(String),
 }
 
 impl CaptiError {

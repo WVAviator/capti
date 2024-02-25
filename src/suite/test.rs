@@ -160,7 +160,7 @@ mod test {
 
     use crate::{
         m_value::m_value::MValue,
-        suite::response::{response_headers::ResponseHeaders, status::Status},
+        suite::{headers::MHeaders, response::status::Status},
     };
 
     use super::*;
@@ -168,12 +168,12 @@ mod test {
     #[test]
     fn test_compare_optional() {
         let matcher = ResponseDefinition {
-            headers: ResponseHeaders::default(),
+            headers: MHeaders::default(),
             body: MValue::default(),
             status: Status::none(),
         };
         let response = ResponseDefinition {
-            headers: ResponseHeaders::default(),
+            headers: MHeaders::default(),
             body: serde_json::from_str::<MValue>(r#"{"test": "test"}"#).unwrap(),
             status: Status::from(200),
         };
@@ -184,12 +184,12 @@ mod test {
     #[test]
     fn test_compare_status_matches() {
         let matcher = ResponseDefinition {
-            headers: ResponseHeaders::default(),
+            headers: MHeaders::default(),
             body: MValue::Null,
             status: Status::from("2xx"),
         };
         let response = ResponseDefinition {
-            headers: ResponseHeaders::default(),
+            headers: MHeaders::default(),
             body: MValue::Null,
             status: Status::from(200),
         };

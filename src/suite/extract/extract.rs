@@ -3,7 +3,7 @@ use serde::Deserialize;
 use crate::{
     errors::CaptiError,
     m_value::m_value::MValue,
-    suite::response::{response_headers::ResponseHeaders, ResponseDefinition},
+    suite::{headers::MHeaders, response::ResponseDefinition},
     variables::variable_map::VariableMap,
 };
 
@@ -11,7 +11,7 @@ use crate::{
 pub struct ResponseExtractor {
     body: MValue,
     #[serde(default)]
-    headers: ResponseHeaders,
+    headers: MHeaders,
 }
 
 impl ResponseExtractor {

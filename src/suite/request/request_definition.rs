@@ -1,24 +1,24 @@
-use reqwest::RequestBuilder;
+use reqwest::{header::HeaderMap, RequestBuilder};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     errors::CaptiError,
     m_value::m_value::MValue,
+    suite::headers::MHeaders,
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
-use super::{
-    query_params::QueryParams, request_headers::RequestHeaders, request_method::RequestMethod,
-};
+use super::{query_params::QueryParams, request_method::RequestMethod};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct RequestDefinition {
-    pub method: RequestMethod,
-    pub url: String,
+    method: RequestMethod,
+    url: String,
     #[serde(default)]
-    pub params: QueryParams,
-    pub headers: Option<RequestHeaders>,
-    pub body: Option<MValue>,
+    params: QueryParams,
+    #[serde(default)]
+    headers: MHeaders,
+    body: Option<MValue>,
 }
 
 impl RequestDefinition {
@@ -36,9 +36,8 @@ impl RequestDefinition {
             RequestMethod::Delete => client.delete(url),
         };
 
-        if let Some(headers) = &self.headers {
-            request_builder = request_builder.headers(headers.clone().into());
-        }
+        let header_map = TryInto::<HeaderMap>::try_into(&self.headers)?;
+        request_builder = request_builder.headers(header_map);
 
         if let Some(body) = &self.body {
             let body_json = serde_json::to_string(&body)?;

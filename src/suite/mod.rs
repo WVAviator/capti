@@ -1,4 +1,5 @@
 pub mod extract;
+pub mod headers;
 pub mod report;
 pub mod request;
 pub mod response;
