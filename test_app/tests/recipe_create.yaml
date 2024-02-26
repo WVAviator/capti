@@ -85,6 +85,8 @@ tests:
       url: ${BASE_URL}/recipes/${RECIPE_ID}
     expect:
       status: 2xx
+      headers:
+        Content-Type: $regex /${TEST_ENV_VAR}/
       body: ${RECIPE}
 
   - test: Recipe name not incorrect
@@ -96,7 +98,6 @@ tests:
     expect:
       body:
         name: $not Guacamole
-
 
   - test: Get recipe has id
     description: 'Should be able to get recipe information'

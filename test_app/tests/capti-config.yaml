@@ -1,3 +1,4 @@
+env_file: .env
 
 setup:
   before_all:
