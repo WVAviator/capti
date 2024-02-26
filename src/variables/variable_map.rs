@@ -4,7 +4,9 @@ use serde::Deserialize;
 
 use regex::{escape, Captures, Regex};
 
-use crate::{errors::CaptiError, m_value::m_value::MValue, progress_println};
+use crate::{
+    errors::CaptiError, m_value::m_value::MValue, progress_println, runner::run_config::RunConfig,
+};
 
 use super::{
     var_regex::{VarRegex, VARIABLE_MATCHER},
@@ -31,6 +33,13 @@ impl VariableMap {
         self.map.insert(key.into(), value.into());
     }
 
+    pub fn insert_if_absent(&mut self, key: impl Into<String>, value: impl Into<MValue>) {
+        let key = key.into();
+        if !self.map.contains_key(&key) {
+            self.insert(key, value);
+        }
+    }
+
     pub fn get(&mut self, key: &str) -> Option<MValue> {
         if let Some(value) = self.map.get(key) {
             return Some(value.clone());
@@ -38,14 +47,14 @@ impl VariableMap {
 
         let env_result = std::env::var(key);
         if let Ok(env_value) = env_result {
-            let env_value = MValue::String(env_value);
-            self.insert(key, env_value.clone());
-            Some(env_value)
-        } else {
-            None
+            return Some(env_value.into());
         }
 
-        // TODO: Load env variables from .env file
+        if let Some(value) = RunConfig::global().env.get(key) {
+            return Some(value.into());
+        }
+
+        None
     }
 
     fn has_variables(&mut self, value: &str) -> bool {

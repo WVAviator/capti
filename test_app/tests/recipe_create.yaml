@@ -5,6 +5,7 @@ variables:
   RECIPE_URL: ${BASE_URL}/recipes
   USER_EMAIL: recipe1@tests.com
   USER_PASSWORD: hG98s4%%phG
+  # TEST_ENV_VAR: ${TEST_ENV_VAR}
   RECIPE:
     name: Guacamole
     description: >

@@ -135,6 +135,7 @@ dependencies = [
  "indexmap",
  "indicatif",
  "lazy_static",
+ "once_cell",
  "openssl",
  "regex",
  "reqwest",

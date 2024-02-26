@@ -3,13 +3,12 @@ use std::path::PathBuf;
 use colored::Colorize;
 use walkdir::WalkDir;
 
-use crate::{formatting::Heading, progress_println, suite::report::TestResultsReport, Suite};
+use crate::{formatting::Heading, progress_println, Suite};
 
 use super::run_config::RunConfig;
 
 pub struct Runner {
     suites: Vec<Suite>,
-    config: Option<RunConfig>,
 }
 
 impl Runner {
@@ -43,14 +42,8 @@ impl Runner {
 
         progress_println!("Found {} test suites", suites.len());
 
-        let config = match config_path {
-            Some(path) => match std::fs::read_to_string(path) {
-                Ok(config) => serde_yaml::from_str::<RunConfig>(&config).ok(),
-                Err(e) => {
-                    eprintln!("Failed to read config file: {}", e);
-                    None
-                }
-            },
+        let config_path = match config_path {
+            Some(path) => Some(path),
             None => WalkDir::new(&path)
                 .into_iter()
                 .filter_map(|e| e.ok())
@@ -59,37 +52,30 @@ impl Runner {
                     None => false,
                 })
                 .map(|e| e.path().to_path_buf())
-                .filter_map(|path| std::fs::read_to_string(path).ok())
-                .find_map(|data| serde_yaml::from_str::<RunConfig>(&data).ok()),
+                .next(),
         };
 
-        if config.is_some() {
-            progress_println!("Loaded config file");
-        }
+        RunConfig::load(config_path);
 
-        Runner { suites, config }
+        Runner { suites }
     }
 
     pub async fn run(&mut self) {
-        if let Some(config) = &self.config {
-            if let Some(setup) = &config.setup {
-                progress_println!("Running test setup scripts");
-                setup.execute_before_all().await;
-            }
+        if let Some(setup) = &RunConfig::global().setup {
+            progress_println!("Running test setup scripts");
+            setup.execute_before_all().await;
         }
 
         let mut futures = Vec::new();
         for suite in self.suites.iter_mut() {
-            let future = process(suite);
+            let future = suite.run();
             futures.push(future);
         }
 
         let reports = futures::future::join_all(futures).await;
 
-        if let Some(config) = &self.config {
-            if let Some(setup) = &config.setup {
-                setup.execute_after_all().await;
-            }
+        if let Some(setup) = &RunConfig::global().setup {
+            setup.execute_after_all().await;
         }
 
         for report in reports.iter() {
@@ -130,8 +116,4 @@ impl Runner {
             total_errors,
         );
     }
-}
-async fn process(suite: &mut Suite) -> TestResultsReport {
-    let report = suite.run().await;
-    report
 }
