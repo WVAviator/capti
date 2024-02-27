@@ -10,8 +10,7 @@ use crate::{
 };
 
 use super::{
-    m_match::MMatch, m_value::MValue, match_context::MatchContext, matcher_error::MatcherError,
-    matcher_map::MatcherMap,
+    m_match::MMatch, m_value::MValue, match_context::MatchContext, matcher_map::MatcherMap,
 };
 
 /// A wrapper definition for where to find the MatchProcessor necessary to process the match. Built
@@ -38,7 +37,10 @@ impl MMatch<MValue> for MatcherDefinition {
             return Ok(result);
         }
 
-        Err(MatcherError::MissingMatcher(self.match_key.clone()).into())
+        Err(CaptiError::matcher_error(format!(
+            "Matcher {} not found in available matchers.",
+            &self.match_key,
+        )))
     }
 
     fn get_context(&self, other: &MValue) -> MatchContext {
@@ -54,7 +56,7 @@ impl MMatch<MValue> for MatcherDefinition {
                     ));
                 }
                 Err(e) => context.push(format!(
-                    "Matching error at {} matches {}\n  {}",
+                    "Matcher error occurred at {} matches {}\n  {}",
                     &self.to_string().yellow(),
                     &other.to_string(),
                     e

@@ -7,7 +7,7 @@ use serde::{
 };
 use serde_yaml::Number;
 
-use crate::{errors::CaptiError, variables::SuiteVariables};
+use crate::{errors::CaptiError, formatting::indent::Indent, variables::SuiteVariables};
 
 use super::{
     m_map::MMap, m_match::MMatch, m_sequence::MSequence, match_context::MatchContext,
@@ -218,8 +218,8 @@ impl MMatch for MValue {
             (left, right) => {
                 let mut context = MatchContext::new();
                 context.push(String::from("Mismatched types"));
-                context.push(format!("  expected: {}", &left.to_string(),));
-                context.push(format!("  found: {}", &right.to_string(),));
+                context.push(format!("expected: {}", &left.to_string()).indent());
+                context.push(format!("found: {}", &right.to_string()).indent());
                 return context;
             }
         }

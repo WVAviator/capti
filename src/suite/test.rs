@@ -7,7 +7,7 @@ use serde::Deserialize;
 use crate::{
     client::Client,
     errors::CaptiError,
-    formatting::Heading,
+    formatting::{indent::Indent, Heading},
     m_value::match_context::MatchContext,
     progress::Spinner,
     progress_println,
@@ -64,7 +64,12 @@ impl TestDefinition {
             let heading = &title.header();
             let footer = &title.footer();
 
-            progress_println!("\n{}\n{}{}\n ", &heading, &response, &footer);
+            progress_println!(
+                "\n{}\n{}\n{}\n ",
+                &heading,
+                response.to_string().indent(),
+                &footer
+            );
         }
 
         let test_result = self.expect.compare(&response)?;

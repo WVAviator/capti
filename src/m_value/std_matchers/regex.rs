@@ -1,5 +1,8 @@
-use crate::m_value::{
-    m_value::MValue, match_processor::MatchProcessor, matcher_error::MatcherError,
+use colored::Colorize;
+
+use crate::{
+    errors::CaptiError,
+    m_value::{m_value::MValue, match_processor::MatchProcessor},
 };
 
 /// The $regex matcher takes in a regex wrapped by '/' characters, and determines whether a match
@@ -19,16 +22,24 @@ impl MatchProcessor for Regex {
         String::from("$regex")
     }
 
-    fn is_match(&self, args: &MValue, value: &MValue) -> Result<bool, MatcherError> {
+    fn is_match(&self, args: &MValue, value: &MValue) -> Result<bool, CaptiError> {
         match (args, value) {
             (MValue::String(args), MValue::String(value)) => {
                 match regex_match(args.clone(), value.clone()) {
                     Ok(result) => Ok(result),
-                    Err(_) => Err(MatcherError::InvalidArgument(args.to_string())),
+                    Err(_) => Err(CaptiError::matcher_error(format!(
+                        "Invalid argument for $regex matcher: {}\nRegular expression must be valid and wrapped in '{}' characters.",
+                        args.red(),
+                        "/".yellow()
+                    ))),
                 }
             }
             (MValue::String(_args), _) => Ok(false),
-            _ => Err(MatcherError::InvalidArgument(args.to_string())),
+
+            _ => Err(CaptiError::matcher_error(format!(
+                "Invalid argument for $regex matcher: {}\nRegular expression must be a string.",
+                args.to_string().red()
+            ))),
         }
     }
 }

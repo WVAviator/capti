@@ -1,5 +1,7 @@
 use std::{collections::VecDeque, fmt, ops::AddAssign};
 
+use crate::formatting::indent::Indent;
+
 /// Provides context for a mismatch between two `MValue` instances.
 /// Used to print information for the user.
 #[derive(Debug, Clone, PartialEq)]
@@ -26,7 +28,7 @@ impl AddAssign for MatchContext {
 impl fmt::Display for MatchContext {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for context in &self.0 {
-            writeln!(f, "  {}", context)?;
+            writeln!(f, "{}", context.to_string().indent())?;
         }
         Ok(())
     }

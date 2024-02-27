@@ -72,7 +72,7 @@ impl Spinner {
                 progress_println!("{}", failure_report);
             }
             Err(e) => {
-                progress_println!("{}", e);
+                progress_println!("{} {}", "→".yellow(), e);
             }
         }
     }

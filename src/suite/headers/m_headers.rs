@@ -140,7 +140,7 @@ impl FromIterator<(MValue, MValue)> for MHeaders {
 impl fmt::Display for MHeaders {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (key, value) in self.0.iter() {
-            writeln!(f, "    ▹ {}: {}", key, value)?;
+            writeln!(f, "▹ {}: {}", key, value)?;
         }
         Ok(())
     }

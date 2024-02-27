@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 use crate::errors::CaptiError;
 
-use super::{m_match::MMatch, match_context::MatchContext, matcher_error::MatcherError};
+use super::{m_match::MMatch, match_context::MatchContext};
 
 /// A special matcher specifically for statuses only. Statuses have different matching rules than
 /// MValues.
@@ -26,9 +26,7 @@ impl MMatch for StatusMatcher {
                 "3xx" => Ok((300..400).contains(n)),
                 "4xx" => Ok((400..500).contains(n)),
                 "5xx" => Ok((500..600).contains(n)),
-                _ => Err(CaptiError::MatcherError {
-                    source: MatcherError::InvalidArgument(c.to_string()),
-                }),
+                _ => Err(CaptiError::matcher_error(format!("Invalid status matcher pattern {}.\nMust be one of '2xx', '3xx', '4xx', or '5xx', or must be the exact status as a number (404, 201, 303, etc)", c.red()))),
             },
             _ => Ok(false),
         }

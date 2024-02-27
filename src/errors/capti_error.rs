@@ -1,6 +1,5 @@
+use crate::formatting::indent::Indent;
 use thiserror::Error;
-
-use crate::m_value::matcher_error::MatcherError;
 
 #[derive(Debug, Error)]
 pub enum CaptiError {
@@ -49,11 +48,8 @@ pub enum CaptiError {
     #[error("Unable to parse HTTP headers: {0}")]
     HTTPHeaderError(String),
 
-    #[error("Matcher error occurred: {source:#?}")]
-    MatcherError {
-        #[from]
-        source: MatcherError,
-    },
+    #[error("Matcher error occurred:\n{message}\n ")]
+    MatcherError { message: String },
 }
 
 impl CaptiError {
@@ -63,5 +59,11 @@ impl CaptiError {
 
     pub fn parallel_error(message: impl Into<String>) -> Self {
         CaptiError::ParallelError(message.into())
+    }
+
+    pub fn matcher_error(message: impl Into<String>) -> Self {
+        CaptiError::MatcherError {
+            message: message.into().indent(),
+        }
     }
 }

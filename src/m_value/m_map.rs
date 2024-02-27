@@ -10,6 +10,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
     errors::CaptiError,
+    formatting::indent::Indent,
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
@@ -107,15 +108,15 @@ impl MMatch for MMap {
                 Ok(false) => {
                     context += v.get_context(&other_v);
                     context.push(format!("Mismatch at key {}:", &k));
-                    context.push(format!("  expected: {}", &v));
-                    context.push(format!("  found: {}", &other_v));
+                    context.push(format!("expected: {}", &v).indent());
+                    context.push(format!("found: {}", &other_v).indent());
                 }
                 Err(e) => {
                     context += v.get_context(&other_v);
                     context.push(format!("Matching error at key {}:", &k));
-                    context.push(format!("  expected: {}", &v));
-                    context.push(format!("  found: {}", &other_v));
-                    context.push(format!("  error: {}", e));
+                    context.push(format!("expected: {}", &v).indent());
+                    context.push(format!("found: {}", &other_v).indent());
+                    context.push(format!("error: {}", e).indent());
                 }
             }
         }

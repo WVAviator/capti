@@ -1,7 +1,8 @@
 use colored::Colorize;
 
-use crate::m_value::{
-    m_value::MValue, match_processor::MatchProcessor, matcher_error::MatcherError,
+use crate::{
+    errors::CaptiError,
+    m_value::{m_value::MValue, match_processor::MatchProcessor},
 };
 
 /// The $length matcher checks the length of a sequence, string, or mapping.
@@ -21,17 +22,17 @@ impl MatchProcessor for Length {
         String::from("$length")
     }
 
-    fn is_match(&self, args: &MValue, value: &MValue) -> Result<bool, MatcherError> {
+    fn is_match(&self, args: &MValue, value: &MValue) -> Result<bool, CaptiError> {
         let matcher = LengthMatcher::try_from(args)?;
 
         match value {
             MValue::Sequence(arr) => Ok(matcher == arr.len()),
             MValue::String(s) => Ok(matcher == s.len()),
             MValue::Mapping(map) => Ok(matcher == map.len()),
-            _ => Err(MatcherError::InvalidComparison {
-                matcher: self.key(),
-                value: value.clone(),
-            }),
+            _ => Err(CaptiError::matcher_error(format!(
+                "Invalid comparison for $length: {}\nValue must be an array, object, or string.",
+                value.to_string().red()
+            ))),
         }
     }
 }
@@ -57,13 +58,12 @@ impl PartialEq<usize> for LengthMatcher {
 }
 
 impl TryFrom<&MValue> for LengthMatcher {
-    type Error = MatcherError;
-    fn try_from(value: &MValue) -> Result<Self, MatcherError> {
+    type Error = CaptiError;
+    fn try_from(value: &MValue) -> Result<Self, CaptiError> {
         match value {
             MValue::Number(n) => {
-                let n = n.as_u64().ok_or(MatcherError::InvalidValue {
-                    value: value.clone(),
-                    message: format!("Invalid number for $length matcher: {}", n),
+                let n = n.as_u64().ok_or(CaptiError::MatcherError {
+                    message: format!("Invalid number for $length matcher: {}\nMust be a positive integer.", n),
                 })? as usize;
 
                 Ok(LengthMatcher::Equal(n))
@@ -72,12 +72,11 @@ impl TryFrom<&MValue> for LengthMatcher {
                 match s.as_str() {
                     s if s.starts_with("==") => {
                         let value = s[2..].trim().parse::<usize>().map_err(|_| {
-                            MatcherError::InvalidValue {
-                                value: value.clone(),
+                            CaptiError::MatcherError {
                                 message: format!(
-                                    "Invalid length matcher {}. Proper format is {}",
+                                    "Invalid length matcher {}. Proper format is '{}'",
                                     s.red(),
-                                    "'== <number>'".green()
+                                    "== <number>".green()
                                 ),
                             }
                         })?;
@@ -85,12 +84,11 @@ impl TryFrom<&MValue> for LengthMatcher {
                     }
                     s if s.starts_with("<=") => {
                         let value = s[2..].trim().parse::<usize>().map_err(|_| {
-                            MatcherError::InvalidValue {
-                                value: value.clone(),
+                            CaptiError::MatcherError {
                                 message: format!(
-                                    "Invalid length matcher {}. Proper format is {}",
+                                    "Invalid length matcher {}. Proper format is '{}'",
                                     s.red(),
-                                    "'<= <number>'".green()
+                                    "<= <number>".green()
                                 ),
                             }
                         })?;
@@ -99,12 +97,11 @@ impl TryFrom<&MValue> for LengthMatcher {
                     }
                     s if s.starts_with(">=") => {
                         let value = s[2..].trim().parse::<usize>().map_err(|_| {
-                            MatcherError::InvalidValue {
-                                value: value.clone(),
+                            CaptiError::MatcherError {
                                 message: format!(
-                                    "Invalid length matcher {}. Proper format is {}",
+                                    "Invalid length matcher {}. Proper format is '{}'",
                                     s.red(),
-                                    "'>= <number>'".green()
+                                    ">= <number>".green()
                                 ),
                             }
                         })?;
@@ -113,12 +110,11 @@ impl TryFrom<&MValue> for LengthMatcher {
                     }
                     s if s.starts_with("<") => {
                         let value = s[1..].trim().parse::<usize>().map_err(|_| {
-                            MatcherError::InvalidValue {
-                                value: value.clone(),
+                            CaptiError::MatcherError {
                                 message: format!(
-                                    "Invalid length matcher {}. Proper format is {}",
+                                    "Invalid length matcher {}. Proper format is '{}'",
                                     s.red(),
-                                    "'< <number>'".green()
+                                    "< <number>".green()
                                 ),
                             }
                         })?;
@@ -128,12 +124,11 @@ impl TryFrom<&MValue> for LengthMatcher {
 
                     s if s.starts_with(">") => {
                         let value = s[1..].trim().parse::<usize>().map_err(|_| {
-                            MatcherError::InvalidValue {
-                                value: value.clone(),
+                            CaptiError::MatcherError {
                                 message: format!(
-                                    "Invalid length matcher {}. Proper format is {}",
+                                    "Invalid length matcher {}. Proper format is '{}'",
                                     s.red(),
-                                    "'> <number>'".green()
+                                    "> <number>".green()
                                 ),
                             }
                         })?;
@@ -141,10 +136,10 @@ impl TryFrom<&MValue> for LengthMatcher {
                         Ok(LengthMatcher::GreaterThan(value))
                     }
                     _ => {
-                        Err(MatcherError::InvalidValue {
-                            value: value.clone(),
+                        Err(
+                            CaptiError::MatcherError {
                             message: format!(
-"Invalid length matcher {}. Comparison operator must be one of {}, {}, {}, {}, or {}.", s.red(), "'=='".green(), "'<='".green(), "'>='".green(), "'<'".green(), "'>'".green()
+"Invalid length matcher {}. Comparison operator must be one of '{}', '{}', '{}', '{}', or '{}'.", s.red(), "==".green(), "<=".green(), ">=".green(), "<".green(), ">".green()
                             ),
                         })
                     }
@@ -152,10 +147,9 @@ impl TryFrom<&MValue> for LengthMatcher {
             }
 
             _ => {
-                Err(MatcherError::InvalidValue {
-                    value: value.clone(),
+                Err(CaptiError::MatcherError {
                     message: format!(
-                        "Invalid value for $length matcher. Must be a number or string in the format '>= 4' or '< 5'"
+                        "Invalid value for $length matcher. Must be a number or string.\nExamples: '3', '>= 4', '< 5'"
                     ),
                 })
             }

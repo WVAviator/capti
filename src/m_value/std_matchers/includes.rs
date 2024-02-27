@@ -1,5 +1,8 @@
-use crate::m_value::{
-    m_match::MMatch, m_value::MValue, match_processor::MatchProcessor, matcher_error::MatcherError,
+use colored::Colorize;
+
+use crate::{
+    errors::CaptiError,
+    m_value::{m_match::MMatch, m_value::MValue, match_processor::MatchProcessor},
 };
 
 /// The $includes matcher checks an array to see if the provided value is included.
@@ -18,7 +21,7 @@ impl MatchProcessor for Includes {
         String::from("$includes")
     }
 
-    fn is_match(&self, args: &MValue, value: &MValue) -> Result<bool, MatcherError> {
+    fn is_match(&self, args: &MValue, value: &MValue) -> Result<bool, CaptiError> {
         match value {
             MValue::Sequence(arr) => {
                 let matches = arr.iter().any(|i| match args.matches(i) {
@@ -27,10 +30,10 @@ impl MatchProcessor for Includes {
                 });
                 Ok(matches)
             }
-            _ => Err(MatcherError::InvalidComparison {
-                matcher: self.key(),
-                value: value.clone(),
-            }),
+            _ => Err(CaptiError::matcher_error(format!(
+                "Invalid comparison for $includes: {}\nValue must be an array.",
+                value.to_string().red()
+            ))),
         }
     }
 }

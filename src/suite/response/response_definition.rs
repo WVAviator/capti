@@ -4,6 +4,7 @@ use serde::Deserialize;
 
 use crate::{
     errors::CaptiError,
+    formatting::indent::Indent,
     m_value::{m_match::MMatch, m_value::MValue, status_matcher::StatusMatcher},
     suite::{headers::MHeaders, test::TestResult},
     variables::{variable_map::VariableMap, SuiteVariables},
@@ -94,15 +95,12 @@ impl fmt::Display for ResponseDefinition {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, " ")?;
 
-        writeln!(f, "  Status: {}\n ", self.status)?;
+        writeln!(f, "Status: {}\n ", self.status)?;
 
-        writeln!(f, "  Headers:\n{}", self.headers)?;
+        writeln!(f, "Headers:\n{}\n ", self.headers.to_string().indent())?;
 
         if let Ok(json) = serde_json::to_string_pretty(&self.body) {
-            writeln!(f, "  Body:")?;
-            for line in json.lines() {
-                writeln!(f, "    {}", line)?;
-            }
+            writeln!(f, "Body:\n{}", json.indent())?;
         }
 
         writeln!(f, " ")?;
