@@ -18,7 +18,7 @@ use super::{
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct MatcherDefinition {
     match_key: String,
-    args: MValue,
+    pub args: MValue,
 }
 
 impl Serialize for MatcherDefinition {
@@ -90,6 +90,6 @@ impl TryFrom<&str> for MatcherDefinition {
             }
         }
 
-        return Err(());
+        Err(())
     }
 }

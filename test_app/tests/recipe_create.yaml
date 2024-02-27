@@ -5,7 +5,11 @@ variables:
   RECIPE_URL: ${BASE_URL}/recipes
   USER_EMAIL: recipe1@tests.com
   USER_PASSWORD: hG98s4%%phG
-  # TEST_ENV_VAR: ${TEST_ENV_VAR}
+  A: ${B}
+  B: ${C}
+  C:
+    - "Checkers"
+    - ${B}
   RECIPE:
     name: Guacamole
     description: >
@@ -39,6 +43,7 @@ tests:
         email: ${USER_EMAIL}
         displayName: john-smith
         password: ${USER_PASSWORD}
+        test: ${A}
     expect:
       status: 2xx
       body:
