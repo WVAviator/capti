@@ -1,4 +1,6 @@
-use crate::m_value::{m_match::MMatch, m_value::MValue, match_processor::MatchProcessor};
+use crate::m_value::{
+    m_match::MMatch, m_value::MValue, match_processor::MatchProcessor, matcher_error::MatcherError,
+};
 
 // The $not matcher matches the opposite of the given arguments
 pub struct Not;
@@ -14,10 +16,14 @@ impl MatchProcessor for Not {
         String::from("$not")
     }
 
-    fn is_match(&self, args: &MValue, value: &MValue) -> bool {
+    fn is_match(&self, args: &MValue, value: &MValue) -> Result<bool, MatcherError> {
         match args.matches(value) {
-            true => false,
-            false => true,
+            Ok(true) => Ok(false),
+            Ok(false) => Ok(true),
+            Err(e) => Err(MatcherError::NestedMatchError {
+                error: e.to_string(),
+                matcher: self.key(),
+            }),
         }
     }
 }

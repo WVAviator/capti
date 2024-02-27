@@ -7,7 +7,7 @@ use serde::{
 };
 use serde_yaml::Number;
 
-use crate::variables::SuiteVariables;
+use crate::{errors::CaptiError, variables::SuiteVariables};
 
 use super::{
     m_map::MMap, m_match::MMatch, m_sequence::MSequence, match_context::MatchContext,
@@ -160,16 +160,16 @@ impl<'de> Deserialize<'de> for MValue {
 }
 
 impl MMatch for MValue {
-    fn matches(&self, other: &Self) -> bool {
+    fn matches(&self, other: &Self) -> Result<bool, CaptiError> {
         match (self, other) {
-            (MValue::Bool(left), MValue::Bool(right)) => left.eq(right),
-            (MValue::String(left), MValue::String(right)) => left.eq(right),
-            (MValue::Number(left), MValue::Number(right)) => left.eq(right),
+            (MValue::Bool(left), MValue::Bool(right)) => Ok(left.eq(right)),
+            (MValue::String(left), MValue::String(right)) => Ok(left.eq(right)),
+            (MValue::Number(left), MValue::Number(right)) => Ok(left.eq(right)),
             (MValue::Sequence(left), MValue::Sequence(right)) => left.matches(right),
             (MValue::Mapping(left), MValue::Mapping(right)) => left.matches(right),
             (MValue::Matcher(left), right) => left.matches(&right),
-            (MValue::Null, _) => true,
-            _ => false,
+            (MValue::Null, _) => Ok(true),
+            _ => Ok(false),
         }
     }
 
@@ -433,8 +433,8 @@ mod test {
         let yaml2 = serde_yaml::from_str::<MValue>(yaml2).unwrap();
         let yaml3 = serde_yaml::from_str::<MValue>(yaml3).unwrap();
 
-        assert!(yaml1.matches(&yaml2));
-        assert!(!yaml1.matches(&yaml3));
+        assert!(yaml1.matches(&yaml2).unwrap());
+        assert!(!yaml1.matches(&yaml3).unwrap());
     }
 
     #[test]

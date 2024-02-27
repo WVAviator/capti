@@ -1,5 +1,7 @@
 use thiserror::Error;
 
+use crate::m_value::matcher_error::MatcherError;
+
 #[derive(Debug, Error)]
 pub enum CaptiError {
     #[error("Error parsing YAML test suite content: {source:#?}")]
@@ -46,6 +48,12 @@ pub enum CaptiError {
 
     #[error("Unable to parse HTTP headers: {0}")]
     HTTPHeaderError(String),
+
+    #[error("Matcher error occurred: {source:#?}")]
+    MatcherError {
+        #[from]
+        source: MatcherError,
+    },
 }
 
 impl CaptiError {

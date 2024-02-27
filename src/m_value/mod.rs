@@ -5,6 +5,7 @@ pub mod m_value;
 pub mod match_context;
 pub mod match_processor;
 pub mod matcher_definition;
+pub mod matcher_error;
 pub mod matcher_map;
 pub mod mvalue_wrapper;
 pub mod status_matcher;

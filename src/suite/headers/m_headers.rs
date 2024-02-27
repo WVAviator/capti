@@ -23,7 +23,7 @@ impl SuiteVariables for MHeaders {
 }
 
 impl MMatch for MHeaders {
-    fn matches(&self, other: &Self) -> bool {
+    fn matches(&self, other: &Self) -> Result<bool, CaptiError> {
         let lowercase_headers = self
             .0
             .iter()
@@ -41,19 +41,25 @@ impl MMatch for MHeaders {
 
     fn get_context(&self, other: &Self) -> MatchContext {
         let mut context = MatchContext::new();
-        if !self.matches(other) {
-            let lowercase_headers = self
-                .0
-                .iter()
-                .map(|(key, value)| {
-                    let key = match key {
-                        MValue::String(s) => MValue::String(s.to_lowercase()),
-                        other => other.clone(),
-                    };
-                    (key, value.clone())
-                })
-                .collect::<MMap>();
-            context += lowercase_headers.get_context(&other.0);
+        match self.matches(other) {
+            Ok(true) => {}
+            Ok(false) => {
+                let lowercase_headers = self
+                    .0
+                    .iter()
+                    .map(|(key, value)| {
+                        let key = match key {
+                            MValue::String(s) => MValue::String(s.to_lowercase()),
+                            other => other.clone(),
+                        };
+                        (key, value.clone())
+                    })
+                    .collect::<MMap>();
+                context += lowercase_headers.get_context(&other.0);
+            }
+            Err(e) => {
+                context.push(format!("Matching error: {}", e));
+            }
         }
         context
     }

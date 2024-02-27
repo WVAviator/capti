@@ -5,6 +5,8 @@ use std::{
 
 use serde::Deserialize;
 
+use crate::errors::CaptiError;
+
 use super::{m_match::MMatch, m_value::MValue, match_context::MatchContext};
 
 /// A sequence of `MValue` items. Equivalent to a typical YAML sequence, with the additional
@@ -33,8 +35,14 @@ impl Into<serde_json::Value> for MSequence {
 }
 
 impl MMatch for MSequence {
-    fn matches(&self, other: &Self) -> bool {
-        return self.0.iter().zip(other.0.iter()).all(|(a, b)| a.matches(b));
+    fn matches(&self, other: &Self) -> Result<bool, CaptiError> {
+        for (a, b) in self.0.iter().zip(other.0.iter()) {
+            if !a.matches(b)? {
+                return Ok(false);
+            }
+        }
+
+        Ok(true)
     }
 
     fn get_context(&self, other: &Self) -> MatchContext {
@@ -43,12 +51,19 @@ impl MMatch for MSequence {
             .iter()
             .zip(other.0.iter())
             .enumerate()
-            .for_each(|(i, (a, b))| {
-                if !a.matches(b) {
+            .for_each(|(i, (a, b))| match a.matches(b) {
+                Ok(true) => {}
+                Ok(false) => {
                     context += a.get_context(&b);
                     context.push(format!("Mismatch at sequence index {}:", i));
                     context.push(format!("  expected: {}", a));
                     context.push(format!("  found: {}", b));
+                }
+                Err(e) => {
+                    context.push(format!("Matching error at sequence index {}:", i));
+                    context.push(format!("  expected: {}", a));
+                    context.push(format!("  found: {}", b));
+                    context.push(format!("  error: {}", e));
                 }
             });
 

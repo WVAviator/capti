@@ -10,7 +10,8 @@ use crate::{
 };
 
 use super::{
-    m_match::MMatch, m_value::MValue, match_context::MatchContext, matcher_map::MatcherMap,
+    m_match::MMatch, m_value::MValue, match_context::MatchContext, matcher_error::MatcherError,
+    matcher_map::MatcherMap,
 };
 
 /// A wrapper definition for where to find the MatchProcessor necessary to process the match. Built
@@ -31,24 +32,36 @@ impl Serialize for MatcherDefinition {
 }
 
 impl MMatch<MValue> for MatcherDefinition {
-    fn matches(&self, other: &MValue) -> bool {
+    fn matches(&self, other: &MValue) -> Result<bool, CaptiError> {
         if let Some(matcher) = MatcherMap::get_matcher(&self.match_key) {
-            return matcher.is_match(&self.args, other);
+            let result = matcher.is_match(&self.args, other)?;
+            return Ok(result);
         }
 
-        false
+        Err(MatcherError::MissingMatcher(self.match_key.clone()).into())
     }
 
     fn get_context(&self, other: &MValue) -> MatchContext {
         let mut context = MatchContext::new();
         if let Some(matcher) = MatcherMap::get_matcher(&self.match_key) {
-            if !matcher.is_match(&self.args, other) {
-                context.push(format!(
-                    "Match failed at {} matches {}",
+            match matcher.is_match(&self.args, other) {
+                Ok(true) => {}
+                Ok(false) => {
+                    context.push(format!(
+                        "Match failed at {} matches {}",
+                        &self.to_string().yellow(),
+                        &other.to_string().red()
+                    ));
+                }
+                Err(e) => context.push(format!(
+                    "Matching error at {} matches {}\n  {}",
                     &self.to_string().yellow(),
-                    &other.to_string().red()
-                ));
+                    &other.to_string(),
+                    e
+                )),
             }
+
+            if let Ok(false) = matcher.is_match(&self.args, other) {}
         }
         context
     }

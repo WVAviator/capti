@@ -53,6 +53,8 @@ mod test {
     #[test]
     fn can_get_exists_matcher() {
         let matcher = MatcherMap::get_matcher("$exists").unwrap();
-        assert!(matcher.is_match(&MValue::Null, &MValue::Bool(false)));
+        assert!(matcher
+            .is_match(&MValue::Null, &MValue::Bool(false))
+            .unwrap());
     }
 }

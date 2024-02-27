@@ -1,8 +1,7 @@
 use colored::Colorize;
 
-use crate::{
-    m_value::{m_value::MValue, match_processor::MatchProcessor},
-    progress_println,
+use crate::m_value::{
+    m_value::MValue, match_processor::MatchProcessor, matcher_error::MatcherError,
 };
 
 /// The $length matcher checks the length of a sequence, string, or mapping.
@@ -22,14 +21,17 @@ impl MatchProcessor for Length {
         String::from("$length")
     }
 
-    fn is_match(&self, args: &MValue, value: &MValue) -> bool {
-        let matcher = LengthMatcher::from(args);
+    fn is_match(&self, args: &MValue, value: &MValue) -> Result<bool, MatcherError> {
+        let matcher = LengthMatcher::try_from(args)?;
 
         match value {
-            MValue::Sequence(arr) => matcher == arr.len(),
-            MValue::String(s) => matcher == s.len(),
-            MValue::Mapping(map) => matcher == map.len(),
-            _ => false,
+            MValue::Sequence(arr) => Ok(matcher == arr.len()),
+            MValue::String(s) => Ok(matcher == s.len()),
+            MValue::Mapping(map) => Ok(matcher == map.len()),
+            _ => Err(MatcherError::InvalidComparison {
+                matcher: self.key(),
+                value: value.clone(),
+            }),
         }
     }
 }
@@ -54,75 +56,108 @@ impl PartialEq<usize> for LengthMatcher {
     }
 }
 
-impl From<&MValue> for LengthMatcher {
-    fn from(value: &MValue) -> Self {
+impl TryFrom<&MValue> for LengthMatcher {
+    type Error = MatcherError;
+    fn try_from(value: &MValue) -> Result<Self, MatcherError> {
         match value {
-            MValue::Number(n) => LengthMatcher::Equal(n.as_u64().unwrap_or(0) as usize),
-            MValue::String(s) => match s.as_str() {
-                s if s.starts_with("==") => {
-                    let value = s[2..].trim().parse::<usize>().unwrap_or_else(|_| {
-                        progress_println!(
-                            "Invalid length matcher {}. Proper format is {}",
-                            s.red(),
-                            "'== <number>'".green()
-                        );
-                        0
-                    });
-                    LengthMatcher::Equal(value)
+            MValue::Number(n) => {
+                let n = n.as_u64().ok_or(MatcherError::InvalidValue {
+                    value: value.clone(),
+                    message: format!("Invalid number for $length matcher: {}", n),
+                })? as usize;
+
+                Ok(LengthMatcher::Equal(n))
+            }
+            MValue::String(s) => {
+                match s.as_str() {
+                    s if s.starts_with("==") => {
+                        let value = s[2..].trim().parse::<usize>().map_err(|_| {
+                            MatcherError::InvalidValue {
+                                value: value.clone(),
+                                message: format!(
+                                    "Invalid length matcher {}. Proper format is {}",
+                                    s.red(),
+                                    "'== <number>'".green()
+                                ),
+                            }
+                        })?;
+                        Ok(LengthMatcher::Equal(value))
+                    }
+                    s if s.starts_with("<=") => {
+                        let value = s[2..].trim().parse::<usize>().map_err(|_| {
+                            MatcherError::InvalidValue {
+                                value: value.clone(),
+                                message: format!(
+                                    "Invalid length matcher {}. Proper format is {}",
+                                    s.red(),
+                                    "'<= <number>'".green()
+                                ),
+                            }
+                        })?;
+
+                        Ok(LengthMatcher::LessEqual(value))
+                    }
+                    s if s.starts_with(">=") => {
+                        let value = s[2..].trim().parse::<usize>().map_err(|_| {
+                            MatcherError::InvalidValue {
+                                value: value.clone(),
+                                message: format!(
+                                    "Invalid length matcher {}. Proper format is {}",
+                                    s.red(),
+                                    "'>= <number>'".green()
+                                ),
+                            }
+                        })?;
+
+                        Ok(LengthMatcher::GreaterEqual(value))
+                    }
+                    s if s.starts_with("<") => {
+                        let value = s[1..].trim().parse::<usize>().map_err(|_| {
+                            MatcherError::InvalidValue {
+                                value: value.clone(),
+                                message: format!(
+                                    "Invalid length matcher {}. Proper format is {}",
+                                    s.red(),
+                                    "'< <number>'".green()
+                                ),
+                            }
+                        })?;
+
+                        Ok(LengthMatcher::LessThan(value))
+                    }
+
+                    s if s.starts_with(">") => {
+                        let value = s[1..].trim().parse::<usize>().map_err(|_| {
+                            MatcherError::InvalidValue {
+                                value: value.clone(),
+                                message: format!(
+                                    "Invalid length matcher {}. Proper format is {}",
+                                    s.red(),
+                                    "'> <number>'".green()
+                                ),
+                            }
+                        })?;
+
+                        Ok(LengthMatcher::GreaterThan(value))
+                    }
+                    _ => {
+                        Err(MatcherError::InvalidValue {
+                            value: value.clone(),
+                            message: format!(
+"Invalid length matcher {}. Comparison operator must be one of {}, {}, {}, {}, or {}.", s.red(), "'=='".green(), "'<='".green(), "'>='".green(), "'<'".green(), "'>'".green()
+                            ),
+                        })
+                    }
                 }
-                s if s.starts_with("<=") => {
-                    let value = s[2..].trim().parse::<usize>().unwrap_or_else(|_| {
-                        progress_println!(
-                            "Invalid length matcher {}. Proper format is {}",
-                            s.red(),
-                            "'<= <number>'".green()
-                        );
-                        0
-                    });
-                    LengthMatcher::LessEqual(value)
-                }
-                s if s.starts_with(">=") => {
-                    let value = s[2..].trim().parse::<usize>().unwrap_or_else(|_| {
-                        progress_println!(
-                            "Invalid length matcher {}. Proper format is {}",
-                            s.red(),
-                            "'>= <number>'".green()
-                        );
-                        0
-                    });
-                    LengthMatcher::GreaterEqual(value)
-                }
-                s if s.starts_with("<") => {
-                    let value = s[1..].trim().parse::<usize>().unwrap_or_else(|_| {
-                        progress_println!(
-                            "Invalid length matcher {}. Proper format is {}",
-                            s.red(),
-                            "'< <number>'".green()
-                        );
-                        0
-                    });
-                    LengthMatcher::LessThan(value)
-                }
-                s if s.starts_with(">") => {
-                    let value = s[1..].trim().parse::<usize>().unwrap_or_else(|_| {
-                        progress_println!(
-                            "Invalid length matcher {}. Proper format is {}",
-                            s.red(),
-                            "'> <number>'".green()
-                        );
-                        0
-                    });
-                    LengthMatcher::GreaterThan(value)
-                }
-                _ => {
-                    progress_println!("Invalid length matcher {}. Comparison operator must be one of {}, {}, {}, {}, or {}.", s.red(), "'=='".green(), "'<='".green(), "'>='".green(), "'<'".green(), "'>'".green());
-                    LengthMatcher::Equal(0)
-                }
-            },
+            }
 
             _ => {
-                progress_println!("Invalid value for $length matcher. Must be a number or string in the format '>= 4' or '< 5'");
-                LengthMatcher::Equal(0)
+                Err(MatcherError::InvalidValue {
+                    value: value.clone(),
+                    message: format!(
+                        "Invalid value for $length matcher. Must be a number or string in the format '>= 4' or '< 5'"
+                    ),
+                })
             }
         }
     }
@@ -139,7 +174,7 @@ mod test {
         let matcher = Length::new();
         let args = MValue::Number(5.into());
         let value = MValue::Sequence(MSequence::from(vec![MValue::Null; 5]));
-        assert!(matcher.is_match(&args, &value));
+        assert!(matcher.is_match(&args, &value).unwrap());
     }
 
     #[test]
@@ -147,7 +182,7 @@ mod test {
         let matcher = Length::new();
         let args = MValue::String("<= 6".to_string());
         let value = MValue::String("hello".to_string());
-        assert!(matcher.is_match(&args, &value));
+        assert!(matcher.is_match(&args, &value).unwrap());
     }
 
     #[test]
@@ -155,6 +190,6 @@ mod test {
         let matcher = Length::new();
         let args = MValue::String("< 5".to_string());
         let value = MValue::String("hello".to_string());
-        assert!(!matcher.is_match(&args, &value));
+        assert!(!matcher.is_match(&args, &value).unwrap());
     }
 }

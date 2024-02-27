@@ -67,7 +67,7 @@ impl TestDefinition {
             progress_println!("\n{}\n{}{}\n ", &heading, &response, &footer);
         }
 
-        let test_result = self.expect.compare(&response);
+        let test_result = self.expect.compare(&response)?;
 
         let test_result = match (test_result, self.should_fail) {
             (TestResult::Passed, true) => TestResult::Failed(FailureReport::new(
@@ -178,7 +178,7 @@ mod test {
             status: Status::from(200),
         };
 
-        assert_eq!(matcher.compare(&response), TestResult::Passed);
+        assert_eq!(matcher.compare(&response).unwrap(), TestResult::Passed);
     }
 
     #[test]
@@ -194,6 +194,6 @@ mod test {
             status: Status::from(200),
         };
 
-        assert_eq!(matcher.compare(&response), TestResult::Passed);
+        assert_eq!(matcher.compare(&response).unwrap(), TestResult::Passed);
     }
 }

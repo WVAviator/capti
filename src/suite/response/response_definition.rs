@@ -39,26 +39,45 @@ impl ResponseDefinition {
         }
     }
 
-    pub fn compare(&self, other: &ResponseDefinition) -> TestResult {
-        if !self.status.matches(&other.status) {
-            return TestResult::fail(
-                "Status does not match.",
-                self.status.get_context(&other.status),
-            );
+    pub fn compare(&self, other: &ResponseDefinition) -> Result<TestResult, CaptiError> {
+        match self.status.matches(&other.status) {
+            Ok(false) => {
+                return Ok(TestResult::fail(
+                    "Status does not match.",
+                    self.status.get_context(&other.status),
+                ));
+            }
+            Err(e) => {
+                return Err(e);
+            }
+            _ => {}
         }
 
-        if !self.headers.matches(&other.headers) {
-            return TestResult::fail(
-                "Headers do not match.",
-                self.headers.get_context(&other.headers),
-            );
+        match self.headers.matches(&other.headers) {
+            Ok(false) => {
+                return Ok(TestResult::fail(
+                    "Headers do not match.",
+                    self.headers.get_context(&other.headers),
+                ));
+            }
+            Err(e) => {
+                return Err(e);
+            }
+            _ => {}
         }
 
-        if !self.body.matches(&other.body) {
-            return TestResult::fail("Body does not match.", self.body.get_context(&other.body));
+        match self.body.matches(&other.body) {
+            Ok(false) => {
+                return Ok(TestResult::fail(
+                    "Body does not match.",
+                    self.body.get_context(&other.body),
+                ));
+            }
+            Err(e) => return Err(e),
+            _ => {}
         }
 
-        TestResult::Passed
+        Ok(TestResult::Passed)
     }
 }
 
