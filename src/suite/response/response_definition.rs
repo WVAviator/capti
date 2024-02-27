@@ -6,7 +6,7 @@ use crate::{
     errors::CaptiError,
     formatting::indent::Indent,
     m_value::{m_match::MMatch, m_value::MValue, status_matcher::StatusMatcher},
-    suite::{headers::MHeaders, test::TestResult},
+    suite::{headers::MHeaders, test_result::TestResult},
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 

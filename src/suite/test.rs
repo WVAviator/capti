@@ -1,6 +1,4 @@
-use std::fmt::{self, Debug};
-
-use colored::Colorize;
+use std::fmt::Debug;
 
 use serde::Deserialize;
 
@@ -15,8 +13,8 @@ use crate::{
 };
 
 use super::{
-    extract::ResponseExtractor, report::ReportedResult, request::RequestDefinition,
-    response::ResponseDefinition,
+    extract::ResponseExtractor, failure_report::FailureReport, report::ReportedResult,
+    request::RequestDefinition, response::ResponseDefinition, test_result::TestResult,
 };
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
@@ -104,57 +102,6 @@ impl SuiteVariables for TestDefinition {
     fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), CaptiError> {
         self.request.populate_variables(variables)?;
         self.expect.populate_variables(variables)?;
-
-        Ok(())
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum TestResult {
-    Passed,
-    Failed(FailureReport),
-}
-
-impl TestResult {
-    pub fn fail(message: impl Into<String>, context: MatchContext) -> Self {
-        TestResult::Failed(FailureReport::new(message, context))
-    }
-}
-
-impl fmt::Display for TestResult {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            TestResult::Passed => write!(f, "{}", "[OK]".green()),
-            TestResult::Failed(_) => write!(f, "{}", "[FAILED]".red()),
-        }
-    }
-}
-
-impl Into<String> for &TestResult {
-    fn into(self) -> String {
-        format!("{}", self)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct FailureReport {
-    message: String,
-    match_context: MatchContext,
-}
-
-impl FailureReport {
-    pub fn new(message: impl Into<String>, match_context: MatchContext) -> Self {
-        FailureReport {
-            message: format!("{} {}", "→".red(), message.into()),
-            match_context,
-        }
-    }
-}
-
-impl fmt::Display for FailureReport {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}", self.message)?;
-        writeln!(f, "{}", self.match_context)?;
 
         Ok(())
     }

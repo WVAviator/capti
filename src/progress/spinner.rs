@@ -5,7 +5,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::{
     progress_println,
-    suite::{report::ReportedResult, test::TestResult},
+    suite::{report::ReportedResult, test_result::TestResult},
 };
 
 use super::multiprogress::multiprogress;
