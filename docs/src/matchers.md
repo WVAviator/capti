@@ -39,4 +39,35 @@ $includes { "id": $exists }
 $includes 5
 $includes "hello, world!"
 $includes $includes 5
+
+# logical matchers can also be used to match multiple values or invert match results
+$and ["$length 3", "$includes 5"]
+$not $regex /[Ee]rror/
 ```
+
+## Matchers List
+
+### Basic Matchers
+
+These matchers provide the base functionality for matching the most common assertions you will make.
+
+- [`$exists`](./matchers/exists.md) - matches anything except null or missing values.
+- [`$absent`](./matchers/absent.md) - matches null or missing values only. Great for asserting that a field like "password" should nto be included in your response.
+- [`$regex`](./matchers/regex.md) - compares the response value to a provided regular expression argument and matches any occurrences of that expression.
+
+### Array Matchers
+
+Matching with arrays can be very tricky with Capti. Capti cannot determine which element should match which, so by default all elements are matched in order. However, you may not know the exact order when writing your assertions. Array matchers provide flexibility in matching array elements.
+
+- [`$empty`](./matchers/empty.md) - asserts that the array is empty. This matcher also works for objects or strings.
+- [`$length`](./matchers/length.md) - allows you to match the length of the array using exact values or comparisons. Also works with strings and objects.
+- [`$includes`](./matchers/includes.md) - asserts that the specified value or matcher matches at least one item in the array. 
+
+### Logical Matchers
+
+Logical matchers use basic logic concepts to allow to match multiple possible values and conditions in your responses.
+
+- [`$and`](./matchers/and.md) - provide multiple matchers as arguments to assert that your response matches _all_ the arguments.
+- [`$or`](./matchers/or.md) - provide multiple matchers as arguments and assert that at least one argument matches your response.
+- [`$not`](./matchers/not.md) - invert the match result of the provided argument.
+

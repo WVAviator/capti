@@ -24,6 +24,8 @@ impl MatcherMap {
         map.insert_mp(Includes::new());
         map.insert_mp(Length::new());
         map.insert_mp(Not::new());
+        map.insert_mp(And::new());
+        map.insert_mp(Or::new());
 
         map
     }

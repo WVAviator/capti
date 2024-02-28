@@ -26,6 +26,10 @@ variables:
         'Cut and remove seeds from avocados, use spoon to scoop and mash in a bowl.',
         'Mix in the vegetables, seasonings, and lime juice squeezed from a fresh lime.',
       ]
+  MIN_GUAC_INGREDIENTS:
+    - $includes $regex /avocado/
+    - $includes $regex /lime/
+
 
 tests:
   - test: Create new user
@@ -85,13 +89,33 @@ tests:
       url: ${BASE_URL}/recipes/${RECIPE_ID}
     expect:
       status: 2xx
-      headers:
-        Content-Type: $not $length >> 3
       body: ${RECIPE}
+
+  - test: Mash or stir
+    description: Guacamole recipe should instruct you to either mash or stir the avocados.
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes/${RECIPE_ID}
+    expect:
+      status: 2xx
+      body:
+        instructions: '$or ["$includes $regex /[Mm]ash/", "$includes $regex /[Ss]tir/"]'
+
+
+
+  - test: Proper guacamole
+    description: Guacamole must have at least avocados and lime ingredients
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes/${RECIPE_ID}
+    expect:
+      status: 2xx
+      body:
+        ingredients: $and ${MIN_GUAC_INGREDIENTS}
 
   - test: Recipe name not incorrect
     description: This recipe should be named 'Guacamole'
-    # should_fail: true
+    should_fail: true
     request:
       method: GET
       url: ${BASE_URL}/recipes/${RECIPE_ID}
