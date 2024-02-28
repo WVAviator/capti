@@ -26,9 +26,6 @@ variables:
         'Cut and remove seeds from avocados, use spoon to scoop and mash in a bowl.',
         'Mix in the vegetables, seasonings, and lime juice squeezed from a fresh lime.',
       ]
-  MIN_GUAC_INGREDIENTS:
-    - $includes $regex /avocado/
-    - $includes $regex /lime/
 
 
 tests:
@@ -108,6 +105,10 @@ tests:
     request:
       method: GET
       url: ${BASE_URL}/recipes/${RECIPE_ID}
+    define:
+      MIN_GUAC_INGREDIENTS:
+        - $includes $regex /avocado/
+        - $includes $regex /lime/
     expect:
       status: 2xx
       body:

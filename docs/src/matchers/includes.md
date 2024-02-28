@@ -52,35 +52,34 @@ tests:
         data: $includes "{ "id": "${RECIPE_ID}" }"
 ```
 
-For a more specific check, the expected item can first be defined as a variable in the suite. The expected value can still be defined as YAML and later will be expanded to the full value when the test is run.
+For a more specific check, the expected item can first be defined as a [local variable](../variables/local.md) in the test. The expected value can still be defined as YAML and later will be expanded to the full value when the test is run.
 
 ```yaml
-variables:
-  RECIPE:
-    name: Guacamole
-    description: A delicious classic guacamole recipe.
-    time: 10
-    servings: 6
-    ingredients:
-      - 3 avocados
-      - 1/2 red onion
-      - 1 lime
-      - 1 green bell pepper
-      - 1 jalapeno pepper
-      - 1/2 tsp cumin
-      - 1/2 tsp salt
-      - 1/2 tsp red pepper
-    instructions: [
-      "Roughly chop onion, green pepper, and jalapeno and add to food processor. Pulse 2-3 times.",
-      "Cut and remove seeds from avocados, use spoon to scoop and mash in a bowl.",
-      "Mix in the vegetables, seasonings, and lime juice squeezed from a fresh lime." ]
-
-tests:
   - test: Recipe included in list
     request:
       method: GET
       url: http://localhost:3000/recipes
+    define:
+      RECIPE:
+        name: Guacamole
+        description: A delicious classic guacamole recipe.
+        ingredients:
+          - 3 avocados
+          - 1/2 red onion
+          - 1 lime
+          - 1 green bell pepper
+          - 1 jalapeno pepper
+          - 1/2 tsp cumin
+          - 1/2 tsp salt
+          - 1/2 tsp red pepper
+        instructions: [
+          "Roughly chop onion, green pepper, and jalapeno and add to food processor. Pulse 2-3 times.",
+          "Cut and remove seeds from avocados, use spoon to scoop and mash in a bowl.",
+          "Mix in the vegetables, seasonings, and lime juice squeezed from a fresh lime." ]
     expect:
       body:
         data: $includes ${RECIPE} 
 ```
+
+Alternatively, you may instead choose to define this variable as a suite variable, so that it can be used to create the resource as well.
+

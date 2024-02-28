@@ -22,10 +22,6 @@ This example uses an `$or` matcher along with [`$includes`](./includes.md) and [
 Alternatively, and for clarity, you can provide the matchers as a variable - avoiding the need for JSON syntax and additional quotation marks in your tests.
 
 ```yaml
-variables:
-  GUAC_REQUIRED_INSTRUCTIONS:
-    - $includes $regex /[Mm]ash/
-    - $includes $regex /[Ss]tir/
 
 tests:
   - test: Mash or stir
@@ -33,6 +29,10 @@ tests:
     request:
       method: GET
       url: ${BASE_URL}/recipes/${RECIPE_ID}
+    define:
+      GUAC_REQUIRED_INSTRUCTIONS:
+        - $includes $regex /[Mm]ash/
+        - $includes $regex /[Ss]tir/
     expect:
       status: 2xx
       body:
@@ -42,18 +42,17 @@ tests:
 You are not limited to just two arguments, you may specify as many as you would like and `$or` will retrun true as long as at least one is true.
 
 ```yaml
-variables:
-  GUAC_REQUIRED_TOOLS:
-    - $includes $regex /[Ff]ork/
-    - $includes $regex /[Ss]poon/
-    - $includes $regex /[Mm]olcajete/
-
 tests:
   - test: Required kitchen tools
     description: Guacamole recipe should instruct you to use a fork, spoon, or a molcajete to mix the guacamole.
     request:
       method: GET
       url: ${BASE_URL}/recipes/${RECIPE_ID}
+    define:
+      GUAC_REQUIRED_TOOLS:
+        - $includes $regex /[Ff]ork/
+        - $includes $regex /[Ss]poon/
+        - $includes $regex /[Mm]olcajete/
     expect:
       status: 2xx
       body:

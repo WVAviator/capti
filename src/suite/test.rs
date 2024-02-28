@@ -28,6 +28,8 @@ pub struct TestDefinition {
     pub extract: Option<ResponseExtractor>,
     #[serde(default)]
     print_response: bool,
+    #[serde(default)]
+    define: VariableMap,
 }
 
 impl TestDefinition {
@@ -100,6 +102,13 @@ impl TestDefinition {
 
 impl SuiteVariables for TestDefinition {
     fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), CaptiError> {
+        self.request
+            .populate_variables(&mut self.define)
+            .unwrap_or(());
+        self.expect
+            .populate_variables(&mut self.define)
+            .unwrap_or(());
+
         self.request.populate_variables(variables)?;
         self.expect.populate_variables(variables)?;
 
