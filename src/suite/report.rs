@@ -4,7 +4,7 @@ use colored::Colorize;
 
 use crate::{errors::CaptiError, formatting::Heading};
 
-use super::test::{TestDefinition, TestResult};
+use super::{test::TestDefinition, test_result::TestResult};
 
 pub struct TestResultsReport {
     pub suite: String,

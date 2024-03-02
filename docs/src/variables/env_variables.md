@@ -28,3 +28,11 @@ tests:
     expect:
       status: 200
 ```
+
+## Env File
+
+If you want to load variables into your environment from a `.env` file in your project, you can specify the path to your `.env` file in your [global config](../configuration/config.md). These variables are not loaded by default.
+
+Just as with environment variables that already exist in your terminal environment, variables loaded from `.env` files will never overwrite variables defined in your test suites.
+
+> Note: Currently, variables loaded from `.env` are not available when declaring variables in your test suites, so you cannot compose static variables from `.env` variables. This is expected to change in the future.

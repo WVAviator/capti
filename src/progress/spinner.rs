@@ -5,7 +5,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 
 use crate::{
     progress_println,
-    suite::{report::ReportedResult, test::TestResult},
+    suite::{report::ReportedResult, test_result::TestResult},
 };
 
 use super::multiprogress::multiprogress;
@@ -72,7 +72,7 @@ impl Spinner {
                 progress_println!("{}", failure_report);
             }
             Err(e) => {
-                progress_println!("{}", e);
+                progress_println!("{} {}", "→".yellow(), e);
             }
         }
     }

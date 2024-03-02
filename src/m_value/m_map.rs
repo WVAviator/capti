@@ -10,6 +10,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
     errors::CaptiError,
+    formatting::indent::Indent,
     variables::{variable_map::VariableMap, SuiteVariables},
 };
 
@@ -84,15 +85,17 @@ impl Serialize for MMap {
 }
 
 impl MMatch for MMap {
-    fn matches(&self, other: &Self) -> bool {
+    fn matches(&self, other: &Self) -> Result<bool, CaptiError> {
         for (k, v) in &self.map {
             let other_v = other.get(k).unwrap_or(&MValue::Null);
-            if !v.matches(other_v) {
-                return false;
+            match v.matches(other_v) {
+                Ok(true) => {}
+                Ok(false) => return Ok(false),
+                Err(e) => return Err(e),
             }
         }
 
-        true
+        Ok(true)
     }
 
     fn get_context(&self, other: &Self) -> super::match_context::MatchContext {
@@ -100,11 +103,21 @@ impl MMatch for MMap {
 
         for (k, v) in &self.map {
             let other_v = other.get(k).unwrap_or(&MValue::Null);
-            if !v.matches(other_v) {
-                context += v.get_context(&other_v);
-                context.push(format!("Mismatch at key {}:", &k));
-                context.push(format!("  expected: {}", &v));
-                context.push(format!("  found: {}", &other_v));
+            match v.matches(other_v) {
+                Ok(true) => {}
+                Ok(false) => {
+                    context += v.get_context(&other_v);
+                    context.push(format!("Mismatch at key {}:", &k));
+                    context.push(format!("expected: {}", &v).indent());
+                    context.push(format!("found: {}", &other_v).indent());
+                }
+                Err(e) => {
+                    context += v.get_context(&other_v);
+                    context.push(format!("Matching error at key {}:", &k));
+                    context.push(format!("expected: {}", &v).indent());
+                    context.push(format!("found: {}", &other_v).indent());
+                    context.push(format!("error: {}", e).indent());
+                }
             }
         }
 

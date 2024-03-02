@@ -127,7 +127,7 @@ checksum = "a2bd12c1caf447e69cd4528f47f94d203fd2582878ecb9e9465484c4148a8223"
 
 [[package]]
 name = "capti"
-version = "0.0.15"
+version = "0.0.20"
 dependencies = [
  "clap",
  "colored",
@@ -135,6 +135,7 @@ dependencies = [
  "indexmap",
  "indicatif",
  "lazy_static",
+ "once_cell",
  "openssl",
  "regex",
  "reqwest",

@@ -26,3 +26,13 @@ You can configure your script to run
 ```bash
 $ capti --path ./tests --config ./config/capti.yaml
 ```
+
+### Config Contents
+
+#### Setup
+
+You can define the key `setup` in your config file to describe a series of global [setup scripts](./scripts.md) that run before and after all test suites.
+
+#### Environment Variables
+
+You can define the key `env_file` with a path to your project's `.env` file. This enables you to reference variables from your `.env` file in your tests as [variables](../variables.md).

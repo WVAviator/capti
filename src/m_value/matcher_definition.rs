@@ -18,7 +18,7 @@ use super::{
 #[derive(Debug, Clone, PartialEq, Hash)]
 pub struct MatcherDefinition {
     match_key: String,
-    args: MValue,
+    pub args: MValue,
 }
 
 impl Serialize for MatcherDefinition {
@@ -31,24 +31,39 @@ impl Serialize for MatcherDefinition {
 }
 
 impl MMatch<MValue> for MatcherDefinition {
-    fn matches(&self, other: &MValue) -> bool {
+    fn matches(&self, other: &MValue) -> Result<bool, CaptiError> {
         if let Some(matcher) = MatcherMap::get_matcher(&self.match_key) {
-            return matcher.is_match(&self.args, other);
+            let result = matcher.is_match(&self.args, other)?;
+            return Ok(result);
         }
 
-        false
+        Err(CaptiError::matcher_error(format!(
+            "Matcher {} not found in available matchers.",
+            &self.match_key,
+        )))
     }
 
     fn get_context(&self, other: &MValue) -> MatchContext {
         let mut context = MatchContext::new();
         if let Some(matcher) = MatcherMap::get_matcher(&self.match_key) {
-            if !matcher.is_match(&self.args, other) {
-                context.push(format!(
-                    "Match failed at {} matches {}",
+            match matcher.is_match(&self.args, other) {
+                Ok(true) => {}
+                Ok(false) => {
+                    context.push(format!(
+                        "Match failed at {} matches {}",
+                        &self.to_string().yellow(),
+                        &other.to_string().red()
+                    ));
+                }
+                Err(e) => context.push(format!(
+                    "Matcher error occurred at {} matches {}\n  {}",
                     &self.to_string().yellow(),
-                    &other.to_string().red()
-                ));
+                    &other.to_string(),
+                    e
+                )),
             }
+
+            if let Ok(false) = matcher.is_match(&self.args, other) {}
         }
         context
     }
@@ -90,6 +105,6 @@ impl TryFrom<&str> for MatcherDefinition {
             }
         }
 
-        return Err(());
+        Err(())
     }
 }

@@ -1,12 +1,19 @@
-use std::{collections::HashMap, ops::Deref};
+use std::{
+    collections::{HashMap, HashSet, VecDeque},
+    ops::Deref,
+};
 
+use colored::Colorize;
 use serde::Deserialize;
 
 use regex::{escape, Captures, Regex};
 
-use crate::{errors::CaptiError, m_value::m_value::MValue, progress_println};
+use crate::{
+    errors::CaptiError, m_value::m_value::MValue, progress_println, runner::run_config::RunConfig,
+};
 
 use super::{
+    self_reference_context::SelfReferenceContext,
     var_regex::{VarRegex, VARIABLE_MATCHER},
     SuiteVariables,
 };
@@ -17,6 +24,40 @@ pub struct VariableMap {
     map: HashMap<String, MValue>,
     #[serde(skip)]
     var_regex: VarRegex,
+}
+
+impl<'a> VariableMap {
+    fn list_variables(&'a self, value: &'a MValue) -> Vec<&'a str> {
+        let mut vars = vec![];
+        match value {
+            MValue::String(value) => {
+                if let Some(captures) = self.var_regex.captures(value) {
+                    let var_name = match captures.get(1) {
+                        Some(name) => name.as_str(),
+                        None => return vars,
+                    };
+                    if self.map.contains_key(var_name) {
+                        vars.push(var_name);
+                    }
+                }
+            }
+            MValue::Mapping(map) => {
+                for v in map.values() {
+                    vars.extend(self.list_variables(&v));
+                }
+            }
+            MValue::Sequence(arr) => {
+                for v in arr.iter() {
+                    vars.extend(self.list_variables(&v));
+                }
+            }
+            MValue::Matcher(matcher) => {
+                vars.extend(self.list_variables(&matcher.args));
+            }
+            _ => {}
+        }
+        vars
+    }
 }
 
 impl VariableMap {
@@ -31,21 +72,41 @@ impl VariableMap {
         self.map.insert(key.into(), value.into());
     }
 
-    pub fn get(&mut self, key: &str) -> Option<MValue> {
+    pub fn insert_if_absent(&mut self, key: impl Into<String>, value: impl Into<MValue>) {
+        let key = key.into();
+        if !self.map.contains_key(&key) {
+            self.insert(key, value);
+        }
+    }
+
+    pub fn get(&self, key: &str) -> Option<MValue> {
         if let Some(value) = self.map.get(key) {
+            match self.contains_reference_cycle(&key) {
+                check if check.is_flagged() => {
+                    progress_println!(
+                        "{}: Circular reference detected in variable definition:\n  {}",
+                        "ERROR".red(),
+                        &check,
+                    );
+
+                    return None;
+                }
+                _ => {}
+            }
+
             return Some(value.clone());
         }
 
         let env_result = std::env::var(key);
         if let Ok(env_value) = env_result {
-            let env_value = MValue::String(env_value);
-            self.insert(key, env_value.clone());
-            Some(env_value)
-        } else {
-            None
+            return Some(env_value.into());
         }
 
-        // TODO: Load env variables from .env file
+        if let Some(value) = RunConfig::global().env.get(key) {
+            return Some(value.into());
+        }
+
+        None
     }
 
     fn has_variables(&mut self, value: &str) -> bool {
@@ -61,6 +122,39 @@ impl VariableMap {
 
             self.get(var_name).is_some()
         })
+    }
+
+    fn contains_reference_cycle(&self, key: &str) -> SelfReferenceContext {
+        let mut queue = VecDeque::new();
+        queue.push_back((key, Vec::new()));
+
+        let mut visited = HashSet::new();
+
+        while let Some((current, path)) = queue.pop_front() {
+            let mut path = path;
+
+            if visited.contains(&current) {
+                let mut context = SelfReferenceContext::from_path(path, current);
+                context.flag();
+
+                return context;
+            }
+
+            visited.insert(current);
+
+            let values = match self.map.get(current) {
+                Some(v) => self.list_variables(v),
+                None => vec![],
+            };
+
+            path.push(current);
+
+            for v in values {
+                queue.push_back((v, path.clone()));
+            }
+        }
+
+        SelfReferenceContext::new()
     }
 
     pub fn replace_variables(&mut self, value: impl Into<MValue>) -> Result<MValue, CaptiError> {
@@ -79,26 +173,6 @@ impl VariableMap {
             other => Ok(other),
         }
     }
-
-    // pub fn replace_string_variables(&mut self, value: &str) -> Result<String, CaptiError> {
-    //     let var_regex = self.var_regex.clone();
-
-    //     let mut result = String::from(value);
-
-    //     while self.has_variables(&result) {
-    //         result = var_regex
-    //             .replace_all(value, |captures: &Captures| {
-    //                 if let Some(MValue::String(replacement_val)) = self.get(&captures[1]) {
-    //                     replacement_val
-    //                 } else {
-    //                     captures[0].to_string()
-    //                 }
-    //             })
-    //             .to_string();
-    //     }
-
-    //     Ok(result)
-    // }
 
     fn replace_string_value(&mut self, value: &str) -> Result<MValue, CaptiError> {
         let var_regex = self.var_regex.clone();
@@ -129,7 +203,7 @@ impl VariableMap {
 
         result.populate_variables(self)?;
 
-        return Ok(result);
+        Ok(result)
     }
 
     pub fn extract_variables(&mut self, extractor: &str, actual: &str) -> Result<(), CaptiError> {

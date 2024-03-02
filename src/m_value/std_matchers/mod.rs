@@ -1,15 +1,23 @@
 pub mod absent;
+pub mod all;
+pub mod and;
 pub mod empty;
 pub mod exists;
 pub mod includes;
 pub mod length;
+pub mod m_if;
 pub mod not;
+pub mod or;
 pub mod regex;
 
 pub use absent::Absent;
+pub use all::All;
+pub use and::And;
 pub use empty::Empty;
 pub use exists::Exists;
 pub use includes::Includes;
 pub use length::Length;
+pub use m_if::If;
 pub use not::Not;
+pub use or::Or;
 pub use regex::Regex;

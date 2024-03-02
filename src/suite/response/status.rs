@@ -2,7 +2,10 @@ use std::{fmt, ops::Deref};
 
 use serde::Deserialize;
 
-use crate::m_value::{m_match::MMatch, match_context::MatchContext, status_matcher::StatusMatcher};
+use crate::{
+    errors::CaptiError,
+    m_value::{m_match::MMatch, match_context::MatchContext, status_matcher::StatusMatcher},
+};
 
 #[derive(Debug, Clone, Deserialize)]
 #[serde(transparent)]
@@ -15,11 +18,11 @@ impl Status {
 }
 
 impl MMatch for Status {
-    fn matches(&self, other: &Self) -> bool {
+    fn matches(&self, other: &Self) -> Result<bool, CaptiError> {
         match (&self.0, &other.0) {
             (Some(a), Some(b)) => a.matches(b),
-            (None, _) => true,
-            (_, None) => false,
+            (None, _) => Ok(true),
+            (_, None) => Ok(false),
         }
     }
     fn get_context(&self, other: &Self) -> MatchContext {

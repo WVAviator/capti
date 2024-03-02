@@ -24,6 +24,10 @@ impl MatcherMap {
         map.insert_mp(Includes::new());
         map.insert_mp(Length::new());
         map.insert_mp(Not::new());
+        map.insert_mp(And::new());
+        map.insert_mp(Or::new());
+        map.insert_mp(If::new());
+        map.insert_mp(All::new());
 
         map
     }
@@ -53,6 +57,8 @@ mod test {
     #[test]
     fn can_get_exists_matcher() {
         let matcher = MatcherMap::get_matcher("$exists").unwrap();
-        assert!(matcher.is_match(&MValue::Null, &MValue::Bool(false)));
+        assert!(matcher
+            .is_match(&MValue::Null, &MValue::Bool(false))
+            .unwrap());
     }
 }

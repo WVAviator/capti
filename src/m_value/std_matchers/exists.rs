@@ -1,4 +1,7 @@
-use crate::m_value::{m_value::MValue, match_processor::MatchProcessor};
+use crate::{
+    errors::CaptiError,
+    m_value::{m_value::MValue, match_processor::MatchProcessor},
+};
 
 /// The $exists matcher returns true if something exists at the expected value.
 /// Returns false if no value is found or if the value is null.
@@ -15,10 +18,10 @@ impl MatchProcessor for Exists {
         String::from("$exists")
     }
 
-    fn is_match(&self, _args: &MValue, value: &MValue) -> bool {
+    fn is_match(&self, _args: &MValue, value: &MValue) -> Result<bool, CaptiError> {
         match value {
-            MValue::Null => false,
-            _ => true,
+            MValue::Null => Ok(false),
+            _ => Ok(true),
         }
     }
 }

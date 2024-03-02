@@ -6,6 +6,7 @@
     "start": "ts-node src/index.ts",
     "compose": "docker compose down && docker compose up --build",
     "test": "cd .. && cargo build && cd test_app && ./../target/debug/capti --path ./tests",
+    "test:release": "cd .. && cargo build --release && cd test_app && ./../target/release/capti --path ./tests",
     "e2e": "capti --path ./tests"
   },
   "author": "",

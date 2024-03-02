@@ -1,6 +1,8 @@
+use colored::Colorize;
+
 use crate::{
+    errors::CaptiError,
     m_value::{m_value::MValue, match_processor::MatchProcessor},
-    progress_println,
 };
 
 /// The $regex matcher takes in a regex wrapped by '/' characters, and determines whether a match
@@ -20,22 +22,24 @@ impl MatchProcessor for Regex {
         String::from("$regex")
     }
 
-    fn is_match(&self, args: &MValue, value: &MValue) -> bool {
+    fn is_match(&self, args: &MValue, value: &MValue) -> Result<bool, CaptiError> {
         match (args, value) {
             (MValue::String(args), MValue::String(value)) => {
                 match regex_match(args.clone(), value.clone()) {
-                    Ok(result) => result,
-                    Err(_) => {
-                        progress_println!("Invalid regex: {}\nBe sure to include '/' characters around your regex matcher.", args);
-                        false
-                    }
+                    Ok(result) => Ok(result),
+                    Err(_) => Err(CaptiError::matcher_error(format!(
+                        "Invalid argument for $regex matcher: {}\nRegular expression must be valid and wrapped in '{}' characters.",
+                        args.red(),
+                        "/".yellow()
+                    ))),
                 }
             }
-            (MValue::String(_args), _) => false,
-            _ => {
-                progress_println!("Invalid regex type: {}\nBe sure to include '/' characters around your regex matcher.", args);
-                false
-            }
+            (MValue::String(_args), _) => Ok(false),
+
+            _ => Err(CaptiError::matcher_error(format!(
+                "Invalid argument for $regex matcher: {}\nRegular expression must be a string.",
+                args.to_string().red()
+            ))),
         }
     }
 }
@@ -64,22 +68,22 @@ mod test {
         let regex = Regex::new();
         let args = MValue::String(String::from("/^abc$/"));
         let value = MValue::String(String::from("abc"));
-        assert!(regex.is_match(&args, &value));
+        assert!(regex.is_match(&args, &value).unwrap());
     }
 
     #[test]
-    fn fails_with_invalid_regex() {
+    fn errors_with_invalid_regex() {
         let regex = Regex::new();
         let args = MValue::String(String::from("^abc$"));
         let value = MValue::String(String::from("abc"));
-        assert!(!regex.is_match(&args, &value));
+        assert!(regex.is_match(&args, &value).is_err());
     }
 
     #[test]
-    fn fails_with_invalid_regex_non_str() {
+    fn errors_with_invalid_regex_non_str() {
         let regex = Regex::new();
         let args = MValue::Number(Number::from(1));
         let value = MValue::String(String::from("1"));
-        assert!(!regex.is_match(&args, &value));
+        assert!(regex.is_match(&args, &value).is_err());
     }
 }

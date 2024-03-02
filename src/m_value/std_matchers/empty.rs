@@ -1,4 +1,9 @@
-use crate::m_value::{m_value::MValue, match_processor::MatchProcessor};
+use colored::Colorize;
+
+use crate::{
+    errors::CaptiError,
+    m_value::{m_value::MValue, match_processor::MatchProcessor},
+};
 
 /// the $empty matcher checks to see if the provided value is empty.
 /// Works with arrays, objects, and strings. Does not match null (use $absent for null checks).
@@ -16,12 +21,15 @@ impl MatchProcessor for Empty {
         String::from("$empty")
     }
 
-    fn is_match(&self, _args: &MValue, value: &MValue) -> bool {
+    fn is_match(&self, _args: &MValue, value: &MValue) -> Result<bool, CaptiError> {
         match value {
-            MValue::Sequence(arr) => arr.is_empty(),
-            MValue::String(s) => s.is_empty(),
-            MValue::Mapping(map) => map.is_empty(),
-            _ => false,
+            MValue::Sequence(arr) => Ok(arr.is_empty()),
+            MValue::String(s) => Ok(s.is_empty()),
+            MValue::Mapping(map) => Ok(map.is_empty()),
+            _ => Err(CaptiError::matcher_error(format!(
+                "Invalid comparison for $empty: {}\nValue must be an object, array, or string.",
+                value.to_string().red()
+            ))),
         }
     }
 }

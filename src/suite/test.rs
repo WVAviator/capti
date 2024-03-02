@@ -1,13 +1,11 @@
-use std::fmt::{self, Debug};
-
-use colored::Colorize;
+use std::fmt::Debug;
 
 use serde::Deserialize;
 
 use crate::{
     client::Client,
     errors::CaptiError,
-    formatting::Heading,
+    formatting::{indent::Indent, Heading},
     m_value::match_context::MatchContext,
     progress::Spinner,
     progress_println,
@@ -15,8 +13,8 @@ use crate::{
 };
 
 use super::{
-    extract::ResponseExtractor, report::ReportedResult, request::RequestDefinition,
-    response::ResponseDefinition,
+    extract::ResponseExtractor, failure_report::FailureReport, report::ReportedResult,
+    request::RequestDefinition, response::ResponseDefinition, test_result::TestResult,
 };
 
 #[derive(Debug, Clone, Deserialize, PartialEq)]
@@ -30,6 +28,8 @@ pub struct TestDefinition {
     pub extract: Option<ResponseExtractor>,
     #[serde(default)]
     print_response: bool,
+    #[serde(default)]
+    define: VariableMap,
 }
 
 impl TestDefinition {
@@ -64,10 +64,15 @@ impl TestDefinition {
             let heading = &title.header();
             let footer = &title.footer();
 
-            progress_println!("\n{}\n{}{}\n ", &heading, &response, &footer);
+            progress_println!(
+                "\n{}\n{}\n{}\n ",
+                &heading,
+                response.to_string().indent(),
+                &footer
+            );
         }
 
-        let test_result = self.expect.compare(&response);
+        let test_result = self.expect.compare(&response)?;
 
         let test_result = match (test_result, self.should_fail) {
             (TestResult::Passed, true) => TestResult::Failed(FailureReport::new(
@@ -97,59 +102,15 @@ impl TestDefinition {
 
 impl SuiteVariables for TestDefinition {
     fn populate_variables(&mut self, variables: &mut VariableMap) -> Result<(), CaptiError> {
+        self.request
+            .populate_variables(&mut self.define)
+            .unwrap_or(());
+        self.expect
+            .populate_variables(&mut self.define)
+            .unwrap_or(());
+
         self.request.populate_variables(variables)?;
         self.expect.populate_variables(variables)?;
-
-        Ok(())
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum TestResult {
-    Passed,
-    Failed(FailureReport),
-}
-
-impl TestResult {
-    pub fn fail(message: impl Into<String>, context: MatchContext) -> Self {
-        TestResult::Failed(FailureReport::new(message, context))
-    }
-}
-
-impl fmt::Display for TestResult {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            TestResult::Passed => write!(f, "{}", "[OK]".green()),
-            TestResult::Failed(_) => write!(f, "{}", "[FAILED]".red()),
-        }
-    }
-}
-
-impl Into<String> for &TestResult {
-    fn into(self) -> String {
-        format!("{}", self)
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct FailureReport {
-    message: String,
-    match_context: MatchContext,
-}
-
-impl FailureReport {
-    pub fn new(message: impl Into<String>, match_context: MatchContext) -> Self {
-        FailureReport {
-            message: format!("{} {}", "→".red(), message.into()),
-            match_context,
-        }
-    }
-}
-
-impl fmt::Display for FailureReport {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "{}", self.message)?;
-        writeln!(f, "{}", self.match_context)?;
 
         Ok(())
     }
@@ -160,7 +121,7 @@ mod test {
 
     use crate::{
         m_value::m_value::MValue,
-        suite::response::{response_headers::ResponseHeaders, status::Status},
+        suite::{headers::MHeaders, response::status::Status},
     };
 
     use super::*;
@@ -168,32 +129,32 @@ mod test {
     #[test]
     fn test_compare_optional() {
         let matcher = ResponseDefinition {
-            headers: ResponseHeaders::default(),
+            headers: MHeaders::default(),
             body: MValue::default(),
             status: Status::none(),
         };
         let response = ResponseDefinition {
-            headers: ResponseHeaders::default(),
+            headers: MHeaders::default(),
             body: serde_json::from_str::<MValue>(r#"{"test": "test"}"#).unwrap(),
             status: Status::from(200),
         };
 
-        assert_eq!(matcher.compare(&response), TestResult::Passed);
+        assert_eq!(matcher.compare(&response).unwrap(), TestResult::Passed);
     }
 
     #[test]
     fn test_compare_status_matches() {
         let matcher = ResponseDefinition {
-            headers: ResponseHeaders::default(),
+            headers: MHeaders::default(),
             body: MValue::Null,
             status: Status::from("2xx"),
         };
         let response = ResponseDefinition {
-            headers: ResponseHeaders::default(),
+            headers: MHeaders::default(),
             body: MValue::Null,
             status: Status::from(200),
         };
 
-        assert_eq!(matcher.compare(&response), TestResult::Passed);
+        assert_eq!(matcher.compare(&response).unwrap(), TestResult::Passed);
     }
 }

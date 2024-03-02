@@ -1,3 +1,4 @@
+use crate::formatting::indent::Indent;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -40,6 +41,15 @@ pub enum CaptiError {
 
     #[error("Error occurred setting up client for requests. Error: {source}")]
     ClientError { source: reqwest::Error },
+
+    #[error("Error occurred parsing or setting suite variables: {0}")]
+    VariableError(String),
+
+    #[error("Unable to parse HTTP headers: {0}")]
+    HTTPHeaderError(String),
+
+    #[error("Matcher error occurred:\n{message}\n ")]
+    MatcherError { message: String },
 }
 
 impl CaptiError {
@@ -49,5 +59,11 @@ impl CaptiError {
 
     pub fn parallel_error(message: impl Into<String>) -> Self {
         CaptiError::ParallelError(message.into())
+    }
+
+    pub fn matcher_error(message: impl Into<String>) -> Self {
+        CaptiError::MatcherError {
+            message: message.into().indent(),
+        }
     }
 }
