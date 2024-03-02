@@ -19,6 +19,7 @@
     - [$length](./matchers/length.md)
     - [$empty](./matchers/empty.md)
     - [$includes](./matchers/includes.md)
+    - [$all](./matches/all.md)
     - [$not](./matchers/not.md)
     - [$and](./matchers/and.md)
     - [$or](./matchers/or.md)

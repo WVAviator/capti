@@ -141,6 +141,28 @@ tests:
       status: 2xx
       body: '$includes { "id": "${RECIPE_ID}" }'
 
+  - test: All recipes belong to user
+    description: Ensure that the endpoint only returns recipes that belong to the current user
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes
+    expect:
+      status: 2xx
+      body: '$all { "userId": "${USER_ID}" }' 
+
+  - test: Recipe constraints upheld
+    description: Verify that all recipes have at least three ingredients and three instructions.
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes
+    define:
+      EXPECTED_AMOUNTS:
+        ingredients: $length >= 3
+        instructions: $length >= 3
+    expect:
+      status: 2xx
+      body: $all ${EXPECTED_AMOUNTS}
+
   - test: Recipe list not empty
     description: Recipe list should not be empty
     request:

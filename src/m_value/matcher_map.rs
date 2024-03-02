@@ -27,6 +27,7 @@ impl MatcherMap {
         map.insert_mp(And::new());
         map.insert_mp(Or::new());
         map.insert_mp(If::new());
+        map.insert_mp(All::new());
 
         map
     }

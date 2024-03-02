@@ -1,4 +1,5 @@
 pub mod absent;
+pub mod all;
 pub mod and;
 pub mod empty;
 pub mod exists;
@@ -10,6 +11,7 @@ pub mod or;
 pub mod regex;
 
 pub use absent::Absent;
+pub use all::All;
 pub use and::And;
 pub use empty::Empty;
 pub use exists::Exists;
