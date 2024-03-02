@@ -52,7 +52,7 @@ $not $regex /[Ee]rror/
 These matchers provide the base functionality for matching the most common assertions you will make.
 
 - [`$exists`](./matchers/exists.md) - matches anything except null or missing values.
-- [`$absent`](./matchers/absent.md) - matches null or missing values only. Great for asserting that a field like "password" should nto be included in your response.
+- [`$absent`](./matchers/absent.md) - matches null or missing values only. Great for asserting that a field like "password" should not be included in your response.
 - [`$regex`](./matchers/regex.md) - compares the response value to a provided regular expression argument and matches any occurrences of that expression.
 
 ### Array Matchers
@@ -70,4 +70,5 @@ Logical matchers use basic logic concepts to allow to match multiple possible va
 - [`$and`](./matchers/and.md) - provide multiple matchers as arguments to assert that your response matches _all_ the arguments.
 - [`$or`](./matchers/or.md) - provide multiple matchers as arguments and assert that at least one argument matches your response.
 - [`$not`](./matchers/not.md) - invert the match result of the provided argument.
+- [`$if`](./matchers/if.md) - evaluates a secondary match conditionally based on the result of an initial match
 

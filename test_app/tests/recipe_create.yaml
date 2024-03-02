@@ -159,6 +159,19 @@ tests:
       status: 2xx
       body: $includes ${RECIPE}
 
+  - test: Guac recipes have avocado
+    description: Any guacamole recipes in the list should contain avocado as an ingredient
+    request:
+      method: GET
+      url: ${BASE_URL}/recipes
+    define:
+      RECIPE_IF:
+        - name: $regex /[Gg]uacamole/
+        - ingredients: $includes $regex /[Aa]vocado/
+    expect:
+      status: 2xx
+      body: $includes $if ${RECIPE_IF}
+
   - test: User only has one recipe
     description: User should only show one recipe in their list
     request:

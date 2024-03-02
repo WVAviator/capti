@@ -20,8 +20,12 @@
     - [$empty](./matchers/empty.md)
     - [$includes](./matchers/includes.md)
     - [$not](./matchers/not.md)
+    - [$and](./matchers/and.md)
+    - [$or](./matchers/or.md)
+    - [$if](./matchers/if.md)
 
 - [Variables](./variables.md)
+    - [Local Variables](./variables/local.md)
     - [Complex Variables](./variables/complex.md)
     - [Extracting Variables](./variables/extracting.md)
     - [Environment Variables](./variables/env_variables.md)
