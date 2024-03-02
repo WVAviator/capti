@@ -11,7 +11,7 @@ If two items are provided, the statement is evaluated as an `if/then` match. If 
 |false|true|true|
 |false|false|true|
 
-If three items are provided, the statement is evaluated as an `if/the/else` match. The first and second items are evaluated the same way as an `if/then` match, except that if the first item returns `false`, then the third item must evalaute to `true` for the test to pass.
+If three items are provided, the statement is evaluated as an `if/then/else` match. The first and second items are evaluated the same way as an `if/then` match, except that if the first item returns `false`, then the third item must evalaute to `true` for the test to pass.
 
 |if|then|else|result|
 |-|-|-|-|

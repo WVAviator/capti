@@ -33,14 +33,14 @@ $regex /[Hh]ello/
 
 # this matcher checks whether the array at this position 
 # contains an object with the property "id"
-$includes { "id": $exists } 
+$includes { "id": "$exists" } 
 
 # includes can also check any other valid YAML/JSON object, value, or matcher
 $includes 5
 $includes "hello, world!"
 $includes $includes 5
 
-# logical matchers can also be used to match multiple values or invert match results
+# logical matchers can also be used to match multiple values conditionally or invert match results
 $and ["$length 3", "$includes 5"]
 $not $regex /[Ee]rror/
 ```
@@ -57,7 +57,7 @@ These matchers provide the base functionality for matching the most common asser
 
 ### Array Matchers
 
-Matching with arrays can be very tricky with Capti. Capti cannot determine which element should match which, so by default all elements are matched in order. However, you may not know the exact order when writing your assertions. Array matchers provide flexibility in matching array elements.
+Matching with arrays can be very tricky with Capti. Capti cannot easily determine which element should match which, so by default all elements are matched in order. However, you may not know the exact order when writing your assertions. Array matchers provide flexibility in matching array elements.
 
 - [`$empty`](./matchers/empty.md) - asserts that the array is empty. This matcher also works for objects or strings.
 - [`$length`](./matchers/length.md) - allows you to match the length of the array using exact values or comparisons. Also works with strings and objects.
