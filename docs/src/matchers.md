@@ -62,6 +62,7 @@ Matching with arrays can be very tricky with Capti. Capti cannot easily determin
 - [`$empty`](./matchers/empty.md) - asserts that the array is empty. This matcher also works for objects or strings.
 - [`$length`](./matchers/length.md) - allows you to match the length of the array using exact values or comparisons. Also works with strings and objects.
 - [`$includes`](./matchers/includes.md) - asserts that the specified value or matcher matches at least one item in the array. 
+- [`$all`](./matchers/all.md) - asserts that every item in an array matches the specified matcher argument
 
 ### Logical Matchers
 
