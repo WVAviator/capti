@@ -11,9 +11,9 @@ Variables can be defined statically as part of the suite or test configuration, 
 - Local Variables - These are defined at the test level under the field `define`. They are only valid for that single test. They can be useful for specifying complex structures to be used as matcher arguments, or they can be used to override suite variables for a single test.
 - Environment Variables - These are pulled from your shell environment or from a [env file](./configuration/config.md#environment-variables). They are useful for synchronizing values in your tests that are also available to your server or other services.
 
-## Variable Precendence
+## Variable Precedence
 
-Variables can be defined as any or all of the above types, and certain types take precendence over others. In order from highest precendence:
+Variables can be defined as any or all of the above types, and certain types take precedence over others. In order from highest precedence:
 
 > Local -> Extracted / Global -> Environment (.env) -> Environment (Shell)
 

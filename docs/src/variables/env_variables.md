@@ -13,7 +13,7 @@ For example, if you have a `SERVER_URL` variable defined in your local environme
       status: 200
 ```
 
-However, since variables defined in your test suite take precendence, if you were to define the SERVER_URL in your suite configuration, that value will be used instead.
+However, since variables defined in your test suite take precedence, if you were to define the SERVER_URL in your suite configuration, that value will be used instead.
 
 ```yaml
 suite: User endpoint tests
