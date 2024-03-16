@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fmt, ops::Deref};
 
 use serde::{Deserialize, Serialize};
+use urlencoding::encode;
 
 use crate::{
     errors::CaptiError,
@@ -47,12 +48,12 @@ impl QueryParams {
             return String::new();
         }
 
-        let mut query_string = String::from("?");
-        for (key, value) in self.iter() {
-            query_string.push_str(&format!("{}={}&", key, value));
-        }
-
-        query_string.pop(); // remove last '&'
+        let query_string = self
+            .iter()
+            .map(|(k, v)| format!("{}={}", encode(k), encode(v)))
+            .collect::<Vec<String>>()
+            .join("&");
+        let query_string = format!("?{}", query_string);
 
         query_string
     }
@@ -93,6 +94,29 @@ mod test {
         let expected_possibilities = vec![
             "http://example.com?key=value&key2=value2",
             "http://example.com?key2=value2&key=value",
+        ];
+
+        let actual = format!("{}{}", url, &query_params.as_query_string());
+        let actual = actual.as_str();
+
+        assert!(expected_possibilities.contains(&actual));
+    }
+
+    #[test]
+    fn properly_encodes() {
+        let url = "http://example.com";
+
+        let mut query_params = QueryParams::default();
+        query_params
+            .0
+            .insert("key".to_string(), "value with spaces".to_string());
+        query_params
+            .0
+            .insert("key2".to_string(), "symbols?&?&".to_string());
+
+        let expected_possibilities = vec![
+            "http://example.com?key=value%20with%20spaces&key2=symbols%3F%26%3F%26",
+            "http://example.com?key2=symbols%3F%26%3F%26&key=value%20with%20spaces",
         ];
 
         let actual = format!("{}{}", url, &query_params.as_query_string());
